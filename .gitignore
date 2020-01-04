@@ -3,3 +3,5 @@ Release/*
 Sly Experimentation.vcxproj
 Sly Experimentation.vcxproj.filters
 Sly Experimentation.vcxproj.user
+pch.cpp
+framework.h

@@ -20,6 +20,7 @@ public:
 	static bool FindSignature(DWORD* out, DWORD start, DWORD size, const char* sig, const char* mask, int len, size_t offset)
 	{
 		size_t s = 1000000;
+		//not efficient
 		for (DWORD i = 0; i < size; i++)
 		{
 			if (i % s == 0) {
