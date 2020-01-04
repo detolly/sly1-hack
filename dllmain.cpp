@@ -64,12 +64,11 @@ DWORD WINAPI MainThread(LPVOID param) {
 	freopen_s(&fp, "CONOUT$", "w", stdout);
 	
 	Param = param;
-	//Ypointer = 0x0;
 
 	int* coins = (int*)0x2027DC08;
 	int* charm = (int*)0x2027DC04;
 	//Entity* entitylist = (Entity*)0x008EB6B8;
-	Entity* entitylist = (Entity*)0x21a7e100;
+	//Entity* entitylist = (Entity*)0x21a7e100;
 	
 	// scanning for the address of the variable:
 	printf("Coins: %d\r\nCharm: %d\r\n", *coins, *charm);
@@ -81,8 +80,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 	const char* positionSignature = "\xC1\xE8\x0C\x8B\x04\x85\x00\x00\x00\x00\xBB\x00\x00\x00\x00\x01\xC1\x0F\x88\x00\x00\x00\x00\x89\x11\xA1\x00\x00\x00\x00\xA3\x00\x00\x00\x00\x8B\x0D\x00\x00\x00\x00\x81\xC1\x00\x00\x00\x00\x89\xC8\xC1\xE8\x0C\x8B\x04\x85\x00\x00\x00\x00\xBB\x00\x00\x00\x00\x01\xC1\x0F\x88\x00\x00\x00\x00\x8B\x01\xA3\x00\x00\x00\x00\xA1\x00\x00\x00\x00\xA3\x00\x00\x00\x00\xF3\x0F\x10\x15\x00\x00\x00\x00\xF3\x0F\x10\x1D\x00\x00\x00\x00\x66\x0F\x7E\xD1";
 	const char* positionMask = "xxxxxx????x????xxxx????xxx????x????xx????xx????xxxxxxxx????x????xxxx????xxx????x????x????xxxx????xxxx????xxxx";
 
-	/*
 
+	//for this hook you have to pick up a coin before the code spawns for some reason..
 	int len = 6;
 	DWORD coinhookLocation = 0x0;
 	if (!SignatureScanner::FindSignature(&coinhookLocation, 0x30000000, 0x10000000, coinSignature, coinMask, strlen(coinMask), 15)) {
@@ -93,6 +92,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	int coinHookHandle = hookManager.AddHook(HookMember(coinhookLocation, a, len, &retjump));
 	hookManager.Get(coinHookHandle)->Hook();
 
+	//same for this one except you have to take one damage while having a charm.
 	len = 6;
 	DWORD charmHookLocation = 0x0;
 	if (!SignatureScanner::FindSignature(&charmHookLocation, 0x30000000, 0x10000000, charmSignature, charmMask, strlen(charmMask), 22)) {
@@ -102,10 +102,9 @@ DWORD WINAPI MainThread(LPVOID param) {
 	printf("Charm hook found: 0x%x\r\n", (DWORD)charmHookLocation);
 	int charmHookHandle = hookManager.AddHook(HookMember(charmHookLocation, b, len, &retjump2));
 	hookManager.Get(charmHookHandle)->Hook();
-	
-	*/
 
-	int len = 8;
+	//this one works all of the time, as long as you have been able to move your character at least once since launch of the game.
+	len = 8;
 	DWORD positionHookLocation = 0x0;
 	if (!SignatureScanner::FindSignature(&positionHookLocation, 0x30000000, 0x10000000, positionSignature, positionMask, strlen(charmMask), 105)) {
 		printf("Failed to find pattern signature for charm hook.");
@@ -117,24 +116,30 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 
 	bool pressed = false;
+	bool registeredEND = false;
+
 	unsigned long frames = 0;
 	while (true) {
 		frames++;
 		//do hacking 
-		if (frames % 20 == 0) {
+		if (frames % 200 == 0) {
 			printf("%.2f\t%.2f\t%.2f\r\n", slyPosition->x, slyPosition->y, slyPosition->z);
 		}
 		if (GetAsyncKeyState(VK_ESCAPE)) break;
 		if (GetAsyncKeyState(VK_END))
-			if (!pressed) {
-				printf("enabled hook on write y vel\r\n");
-				pressed = true;
+			if (!registeredEND) {
+				if (!pressed) {
+					printf("enabled hook on write y vel\r\n");
+					pressed = true;
+				}
+				else {
+					printf("disabled hook on write y vel\r\n");
+					pressed = false;
+				}
+				registeredEND = true;
 			}
-			else {
-				printf("disabled hook on write y vel\r\n");
-				pressed = false;
-			}
-		Sleep(50);
+			else registeredEND = false;
+		Sleep(1);
 	}
 
 	exit_app();
@@ -143,7 +148,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 void exit_app() {
 	printf("Unhooking, don't close\r\n");
 	hookManager.UnhookAll();
-	Sleep(2500);
 	printf("Now you can close\r\n");
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
