@@ -1,5 +1,5 @@
-./Debug/
-./Release/
+Debug/*
+Release/*
 Sly Experimentation.vcxproj
 Sly Experimentation.vcxproj.filters
 Sly Experimentation.vcxproj.user
