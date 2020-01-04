@@ -1,0 +1,3 @@
+﻿  pch.cpp
+  dllmain.cpp
+D:\OneDrive - Høgskulen på Vestlandet\Random Kode\Sly Experimentation\Sly Experimentation\dllmain.cpp(13,22): error C2065: 'MainThread': undeclared identifier
