@@ -2,15 +2,33 @@
 #include "pch.h"
 #include "sigscan.h"
 #include "HookManager.h"
-#include "vector3.h"
-#include "rotation.h"
 
-Vector3* slyPosition;
-Rotation* slyRotation;
-HookManager hookManager;
-LPVOID Param;
-void exit_app();
+#pragma region structs
+struct Vector3 {
+	float x, z, y;
+};
 
+struct Rotation {
+	float yawa, pitcha;
+	float rolla, rollb;
+	float pitchb, yawb;
+
+	void Rotate(float yaw, float pitch) {
+		yawa = yaw;
+		pitcha = pitch;
+		pitchb = pitch;
+		yawb = -yaw;
+	}
+};
+
+struct Entity {
+	float x, z, y;
+	char buffer[52];
+};
+#pragma endregion structs
+
+
+#pragma region hooks
 DWORD retjump;
 void __declspec(naked) a() {
 	__asm {
@@ -28,17 +46,24 @@ void __declspec(naked) b() {
 }
 
 DWORD retjump4;
+Vector3* slyPosition;
+//Rotation* slyRotation;
 void __declspec(naked) d() {
 	__asm {
 		sub ecx, 0x8
 		mov [slyPosition], ecx
-		sub ecx, 0x30
-		mov [slyRotation], ecx
 		movd ecx, xmm2
 		movd edx, xmm3
 		jmp [retjump4]
 	}
 }
+
+#pragma endregion hooks
+
+
+HookManager hookManager;
+LPVOID Param;
+void exit_app();
 
 DWORD WINAPI MainThread(LPVOID param) {
 	AllocConsole();
@@ -62,34 +87,38 @@ DWORD WINAPI MainThread(LPVOID param) {
 	const char* positionSignature = "\xC1\xE8\x0C\x8B\x04\x85\x00\x00\x00\x00\xBB\x00\x00\x00\x00\x01\xC1\x0F\x88\x00\x00\x00\x00\x89\x11\xA1\x00\x00\x00\x00\xA3\x00\x00\x00\x00\x8B\x0D\x00\x00\x00\x00\x81\xC1\x00\x00\x00\x00\x89\xC8\xC1\xE8\x0C\x8B\x04\x85\x00\x00\x00\x00\xBB\x00\x00\x00\x00\x01\xC1\x0F\x88\x00\x00\x00\x00\x8B\x01\xA3\x00\x00\x00\x00\xA1\x00\x00\x00\x00\xA3\x00\x00\x00\x00\xF3\x0F\x10\x15\x00\x00\x00\x00\xF3\x0F\x10\x1D\x00\x00\x00\x00\x66\x0F\x7E\xD1";
 	const char* positionMask = "xxxxxx????x????xxxx????xxx????x????xx????xx????xxxxxxxx????x????xxxx????xxx????x????x????xxxx????xxxx????xxxx";
 
+
 	//for this hook you have to pick up a coin before the code spawns for some reason..
+	int len = 6;
 	DWORD coinhookLocation = 0x0;
 	if (!SignatureScanner::FindSignature(&coinhookLocation, 0x30000000, 0x10000000, coinSignature, coinMask, strlen(coinMask), 15)) {
 		printf("Failed to find pattern signature for coin hook.");
 		exit_app();
 	}
 	printf("Coin hook found: 0x%x\r\n", (DWORD)coinhookLocation);
-	int coinHookHandle = hookManager.AddHook(HookMember(coinhookLocation, a, 6, &retjump));
+	int coinHookHandle = hookManager.AddHook(HookMember(coinhookLocation, a, len, &retjump));
 	hookManager.Get(coinHookHandle)->Hook();
 
 	//same for this one except you have to take one damage while having a charm.
+	len = 6;
 	DWORD charmHookLocation = 0x0;
 	if (!SignatureScanner::FindSignature(&charmHookLocation, 0x30000000, 0x10000000, charmSignature, charmMask, strlen(charmMask), 22)) {
 		printf("Failed to find pattern signature for charm hook.");
 		exit_app();
 	}
 	printf("Charm hook found: 0x%x\r\n", (DWORD)charmHookLocation);
-	int charmHookHandle = hookManager.AddHook(HookMember(charmHookLocation, b, 6, &retjump2));
+	int charmHookHandle = hookManager.AddHook(HookMember(charmHookLocation, b, len, &retjump2));
 	hookManager.Get(charmHookHandle)->Hook();
 
 	//this one works all of the time, as long as you have been able to move your character at least once since launch of the game.
+	len = 8;
 	DWORD positionHookLocation = 0x0;
 	if (!SignatureScanner::FindSignature(&positionHookLocation, 0x30000000, 0x10000000, positionSignature, positionMask, strlen(charmMask), 105)) {
 		printf("Failed to find pattern signature for charm hook.");
 		exit_app();
 	}
 	printf("Position hook found: 0x%x\r\n", (DWORD)positionHookLocation);
-	int positionHookHandle = hookManager.AddHook(HookMember(positionHookLocation, d, 8, &retjump4));
+	int positionHookHandle = hookManager.AddHook(HookMember(positionHookLocation, d, len, &retjump4));
 	hookManager.Get(positionHookHandle)->Hook();
 
 
@@ -100,8 +129,9 @@ DWORD WINAPI MainThread(LPVOID param) {
 	while (true) {
 		frames++;
 		//do hacking 
-		if (frames % 500 == 0) {
+		if (frames % 200 == 0) {
 			printf("Position (0x%x): %.2f\t%.2f\t%.2f\r\n", (DWORD)slyPosition, slyPosition->x, slyPosition->y, slyPosition->z);
+			//printf("Rotation (0x%x): %.2f\t%.2f\t%.2f\t%.2f\r\n", (DWORD)slyRotation, slyRotation->yawa, slyRotation->yawb, slyRotation->pitcha, slyRotation->pitchb);
 		}
 		if (GetAsyncKeyState(VK_ESCAPE)) break;
 		if (GetAsyncKeyState(VK_END))
@@ -122,6 +152,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	exit_app();
 }
+
 
 void exit_app() {
 	printf("Unhooking, don't close\r\n");

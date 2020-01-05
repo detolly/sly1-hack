@@ -24,14 +24,15 @@ public:
 		for (DWORD i = 0; i < size; i++)
 		{
 			if (i % s == 0) {
-				printf("testing address 0x%d\r\n", start + i);
+				printf("testing address 0x%x\r\n", start + i);
 			}
 			if (MemoryCompare(start + i, sig, mask, len)) {
-				printf("found signature at %d\r\n", start+i);
+				printf("found signature at 0x%x\r\n", start+i);
 				*out = start + i + offset;
 				return true;
 			}
 		}
+		printf("returned false\r\n");
 		return false;
 	}
 };
