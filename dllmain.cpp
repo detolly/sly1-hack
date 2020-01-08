@@ -4,6 +4,8 @@
 #include "HookManager.h"
 #include "vector3.h"
 #include "rotation.h"
+#include "memorydump.h"
+#include "Menu.h"
 
 Vector3* slyPosition;
 Rotation* slyRotation;
@@ -11,34 +13,53 @@ HookManager hookManager;
 LPVOID Param;
 void exit_app();
 
-DWORD retjump;
-void __declspec(naked) a() {
-	__asm {
-		mov edx, 69
-		jmp [retjump]
-	}
+typedef void(__fastcall* AddCoinFn)(DWORD ecx, int coins);
+AddCoinFn oAddCoin;
+void __fastcall hookedAddCoin(DWORD ecx, int coins) {
+	coins = 69;	
+	oAddCoin(ecx, coins);
 }
 
-DWORD retjump2;
-void __declspec(naked) b() {
+typedef void(__fastcall* TakeDamageFn)(DWORD ecx, int charm);
+TakeDamageFn oTakeDamage;
+void __fastcall hookedTakeDamage(DWORD ecx, int charm) {
+	charm = 2;
+	oTakeDamage(ecx, charm);
+}
+
+typedef void(__cdecl* AccessSlyPositionFn)();
+AccessSlyPositionFn oAccessSlyPosition;
+void hookedAccessSlyPosition() {
 	__asm {
-		mov edx, 2
-		jmp[retjump2]
+		sub ecx, 0x8
+		mov[slyPosition], ecx
+		sub ecx, 0x30
+		mov[slyRotation], ecx
+		movd ecx, xmm2
+		movd edx, xmm3
 	}
+	oAccessSlyPosition();
 }
 
 DWORD retjump4;
+float gravity = 1;
 void __declspec(naked) d() {
 	__asm {
-		sub ecx, 0x8
-		mov [slyPosition], ecx
-		sub ecx, 0x30
-		mov [slyRotation], ecx
-		movd ecx, xmm2
-		movd edx, xmm3
+		movaps xmm5, [edx]
+		movaps xmm1, xmm5
+		mulss xmm1, [gravity]
+		movaps xmm5, xmm1
+		movaps [ecx], xmm5
 		jmp [retjump4]
 	}
 }
+
+//experimental
+typedef void(__stdcall* RenderMenu)(Menu* menuBase);
+RenderMenu renderMenu;
+
+DWORD start = 0x30000000; //recompiler address space
+DWORD size = 0x10000000;
 
 DWORD WINAPI MainThread(LPVOID param) {
 	AllocConsole();
@@ -46,14 +67,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 	freopen_s(&fp, "CONOUT$", "w", stdout);
 	
 	Param = param;
-
-	int* coins = (int*)0x2027DC08;
-	int* charm = (int*)0x2027DC04;
-	//Entity* entitylist = (Entity*)0x008EB6B8;
-	//Entity* entitylist = (Entity*)0x21a7e100;
-	
-	// scanning for the address of the variable:
-	printf("Coins: %d\r\nCharm: %d\r\n", *coins, *charm);
 
 	const char* coinSignature = "\x75\x0D\x83\x3D\x00\x00\x00\x00\x00\x0F\x84\x00\x00\x00\x00\x8B\x15\x00\x00\x00\x00\x8B\x0D\x00\x00\x00\x00\x81\xC1\x00\x00\x00\x00\x89\xC8\xC1\xE8\x0C\x8B\x04\x85\x00\x00\x00\x00\xBB\x00\x00\x00\x00\x01\xC1\x0F\x88\x00\x00\x00\x00\x89\x11\xC7\x05\x00\x00\x00\x00\x00\x00\x00\x00\xA1\x00\x00\x00\x00\x83\xC0\x13\xA3\x00\x00\x00\x00\x2B\x05\x00\x00\x00\x00\x0F\x88\x00\x00\x00\x00\xE9\x00\x00\x00\x00\x8B\x15\x00\x00\x00\x00\x8B\x0D\x00\x00\x00\x00\x81\xC1\x00\x00\x00\x00\x89\xC8\xC1\xE8\x0C\x8B\x04\x85\x00\x00\x00\x00";
 	const char* coinMask = "xxxx?????xx????xx????xx????xx????xxxxxxxx????x????xxxx????xxxx????????x????xxxx????xx????xx????x????xx????xx????xx????xxxxxxxx????";
@@ -64,37 +77,45 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	//for this hook you have to pick up a coin before the code spawns for some reason..
 	DWORD coinhookLocation = 0x0;
-	if (!SignatureScanner::FindSignature(&coinhookLocation, 0x30000000, 0x10000000, coinSignature, coinMask, strlen(coinMask), 15)) {
+	if (!SignatureScanner::FindSignature(&coinhookLocation, start, size, coinSignature, coinMask, strlen(coinMask), 15)) {
 		printf("Failed to find pattern signature for coin hook.");
-		exit_app();
 	}
-	printf("Coin hook found: 0x%x\r\n", (DWORD)coinhookLocation);
-	int coinHookHandle = hookManager.AddHook(HookMember(coinhookLocation, a, 6, &retjump));
-	hookManager.Get(coinHookHandle)->Hook();
+	else {
+		printf("Coin hook found: 0x%x\r\n", coinhookLocation);
+		int coinHookHandle = hookManager.AddHook(HookMember((void*)coinhookLocation, hookedAddCoin, 6));
+		oAddCoin = (AddCoinFn)hookManager.Get(coinHookHandle)->Hook();
+	}
 
-	//same for this one except you have to take one damage while having a charm.
+	//you have to take one damage while having a charm.
 	DWORD charmHookLocation = 0x0;
-	if (!SignatureScanner::FindSignature(&charmHookLocation, 0x30000000, 0x10000000, charmSignature, charmMask, strlen(charmMask), 22)) {
+	if (!SignatureScanner::FindSignature(&charmHookLocation, start, size, charmSignature, charmMask, strlen(charmMask), 22)) {
 		printf("Failed to find pattern signature for charm hook.");
 		exit_app();
 	}
-	printf("Charm hook found: 0x%x\r\n", (DWORD)charmHookLocation);
-	int charmHookHandle = hookManager.AddHook(HookMember(charmHookLocation, b, 6, &retjump2));
-	hookManager.Get(charmHookHandle)->Hook();
+	printf("Charm hook found: 0x%x\r\n", charmHookLocation);
+	int charmHookHandle = hookManager.AddHook(HookMember((void*)charmHookLocation, hookedTakeDamage, 6));
+	oTakeDamage = (TakeDamageFn)hookManager.Get(charmHookHandle)->Hook();
+	
 
 	//this one works all of the time, as long as you have been able to move your character at least once since launch of the game.
 	DWORD positionHookLocation = 0x0;
-	if (!SignatureScanner::FindSignature(&positionHookLocation, 0x30000000, 0x10000000, positionSignature, positionMask, strlen(charmMask), 105)) {
+	if (!SignatureScanner::FindSignature(&positionHookLocation, start, size, positionSignature, positionMask, strlen(charmMask), 105)) {
 		printf("Failed to find pattern signature for charm hook.");
 		exit_app();
 	}
-	printf("Position hook found: 0x%x\r\n", (DWORD)positionHookLocation);
-	int positionHookHandle = hookManager.AddHook(HookMember(positionHookLocation, d, 8, &retjump4));
-	hookManager.Get(positionHookHandle)->Hook();
+	printf("Position hook found: 0x%x\r\n", positionHookLocation);
+	int positionHookHandle = hookManager.AddHook(HookMember((void*)positionHookLocation, hookedAccessSlyPosition, 8));
+	oAccessSlyPosition = (AccessSlyPositionFn)hookManager.Get(positionHookHandle)->Hook();
 
+	/*experimental
+	Menu* m = copyMenu(0x2026FF68);
+	renderMenu = (RenderMenu)0x305D3A3E;
+	*/
 
 	bool pressed = false;
-	bool registeredEND = false;
+	bool registeredDOWN = false;
+	bool registeredUP = false;
+	bool registeredPGDN = false;
 
 	unsigned long frames = 0;
 	while (true) {
@@ -104,19 +125,28 @@ DWORD WINAPI MainThread(LPVOID param) {
 			printf("Position (0x%x): %.2f\t%.2f\t%.2f\r\n", (DWORD)slyPosition, slyPosition->x, slyPosition->y, slyPosition->z);
 		}
 		if (GetAsyncKeyState(VK_ESCAPE)) break;
-		if (GetAsyncKeyState(VK_END))
-			if (!registeredEND) {
-				if (!pressed) {
-					printf("enabled hook on write y vel\r\n");
-					pressed = true;
-				}
-				else {
-					printf("disabled hook on write y vel\r\n");
-					pressed = false;
-				}
-				registeredEND = true;
+		if (GetAsyncKeyState(VK_DOWN)) {
+			if (!registeredDOWN) {
+				gravity *= 0.5;
+				//renderMenu(m);
+				printf("%.2f\r\n", gravity);
+				registeredDOWN = true;
 			}
-			else registeredEND = false;
+		} else registeredDOWN = false;
+		if (GetAsyncKeyState(VK_UP)) {
+			if (!registeredUP) {
+				gravity *= 2;
+				printf("%.2f\r\n", gravity);
+				registeredUP = true;
+			}
+		} else registeredUP = false;
+		if (GetAsyncKeyState(VK_NEXT)) {
+			if (!registeredPGDN) {
+				//MemoryDump::Dump("C:\\test\\dump.bin", 0x30000000, positionHookLocation-0x30000000);
+				registeredPGDN = true;
+			}
+		}
+		else registeredPGDN = false;
 		Sleep(1);
 	}
 

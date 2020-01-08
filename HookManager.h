@@ -8,16 +8,16 @@ struct HookMember {
 private:
 	bool is_hooked = false;
 public:
-	DWORD baseAddress;
+	void* baseAddress;
 	void* functionPointer;
 	int len;
 	BYTE* oldBytes;
 	DWORD retAddress;
 
-	HookMember(DWORD, void*, int, DWORD* retjump);
+	HookMember(void*, void*, int);
 	~HookMember();
 
-	bool Hook();
+	void* Hook();
 	bool Unhook();
 };
 

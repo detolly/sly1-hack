@@ -20,32 +20,32 @@ void HookManager::UnhookAll() {
 }
 
 
-bool HookMember::Hook() {
+void* HookMember::Hook() {
 	if (this->is_hooked) {
-		return false;
+		return (void*)retAddress;
 	}
 
 	if (len < 5) {
-		return false;
+		return nullptr;
 	}
 
 	DWORD old;
-	VirtualProtect((LPVOID)this->baseAddress, len, PAGE_EXECUTE_READWRITE, &old);
+	VirtualProtect(this->baseAddress, len, PAGE_EXECUTE_READWRITE, &old);
 
 	this->oldBytes = new BYTE[len];
 	memcpy(this->oldBytes, (void*)this->baseAddress, len);
 	printf("Hooking %x with %d length. (fp: %x)\r\n", (DWORD)this->baseAddress, len, (DWORD)this->functionPointer);
 	memset((void*)this->baseAddress, 0x90, len);
 
-	DWORD relativeAddress = (DWORD)this->functionPointer-this->baseAddress-5;
+	DWORD relativeAddress = (DWORD)this->functionPointer-(DWORD)this->baseAddress-5;
 	*(BYTE*)(this->baseAddress) = 0xE9;
-	*(DWORD*)(this->baseAddress + 1) = relativeAddress;
+	*(DWORD*)((DWORD)this->baseAddress + 1) = relativeAddress;
 
-	VirtualProtect((void*)this->baseAddress, len, old, NULL);
+	VirtualProtect(this->baseAddress, len, old, NULL);
 
 	this->is_hooked = true;
 
-	return true;
+	return (void*)retAddress;
 }
 
 bool HookMember::Unhook() {
@@ -71,10 +71,9 @@ HookMember::~HookMember() {
 	}
 }
 
-HookMember::HookMember(DWORD baseAddress, void* functionPointer, int len, DWORD* retjump) {
+HookMember::HookMember(void* baseAddress, void* functionPointer, int len) {
 	this->baseAddress = baseAddress;
 	this->functionPointer = functionPointer;
 	this->len = len;
 	this->retAddress = (DWORD)baseAddress + len;
-	*retjump = this->retAddress;
 }
