@@ -3,5 +3,5 @@
 welcome to my sly 1 hack
 
 1. compile dll
-2. inject
+2. inject (into pcsx2)
 3. profit
