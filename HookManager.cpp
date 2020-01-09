@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "HookManager.h"
+#include "sigscan.h"
 
 HookManager::HookManager() { count = 0; }
 
@@ -19,7 +20,7 @@ void HookManager::UnhookAll() {
 	}
 }
 
-
+/* deprecated
 void* HookMember::Hook() {
 	if (this->is_hooked) {
 		return (void*)retAddress;
@@ -47,18 +48,58 @@ void* HookMember::Hook() {
 
 	return (void*)retAddress;
 }
+*/
+
+DWORD start = 0x30000000; //recompiler address space
+DWORD size = 0x1000000;
+
+DWORD HookMember::Hook() {
+	if (this->is_hooked) {
+		return this->retAddress;
+	}
+
+	oldBytes = new BYTE[strlen(bytesToReplace)];
+
+	DWORD old = 0x0;
+	VirtualProtect(baseAddress, strlen(bytesToReplace), PAGE_EXECUTE_READWRITE, &old);
+	memcpy(oldBytes, baseAddress, strlen(bytesToReplace));
+	memcpy(baseAddress, bytesToReplace, strlen(bytesToReplace));
+	VirtualProtect(baseAddress, strlen(bytesToReplace), old, nullptr);
+
+	DWORD hookLocation = 0x0;
+	while (true) {
+		printf("sigscanning for hook...\r\n");
+		if (!SignatureScanner::FindSignature(&hookLocation, start, size, hookString, hookMask, 0)) {
+			Sleep(100);
+		}
+		else break;
+	}
+	printf("Hook location found at: 0x%x\r\n", hookLocation);
+
+	VirtualProtect((void*)hookLocation, 5, PAGE_EXECUTE_READWRITE, &old);
+
+	memset((void*)hookLocation, 0x90, length - 1);
+	*(BYTE*)hookLocation = 0xE9;
+	*(DWORD*)(hookLocation + 1) = ((DWORD)functionPointer - hookLocation - 5);
+
+
+	VirtualProtect((void*)hookLocation, length, old, nullptr);
+
+	printf("return ptr: 0x%x\r\n", hookLocation + length);
+	retAddress = hookLocation + length;
+
+	return retAddress;
+}
 
 bool HookMember::Unhook() {
-	
 	if (!is_hooked) {
 		return false;
 	}
 
 	DWORD old;
-
-	VirtualProtect((void*)this->baseAddress, len, PAGE_EXECUTE_READWRITE, &old);
-	memcpy((void*)this->baseAddress, this->oldBytes, len);
-	VirtualProtect((void*)this->baseAddress, len, old, NULL);
+	VirtualProtect(baseAddress, strlen(bytesToReplace), PAGE_EXECUTE_READWRITE, &old);
+	memcpy(baseAddress, oldBytes, strlen(bytesToReplace));
+	VirtualProtect(baseAddress, strlen(bytesToReplace), old, nullptr);
 	
 	this->is_hooked = false;
 
@@ -66,14 +107,11 @@ bool HookMember::Unhook() {
 }
 
 HookMember::~HookMember() {
-	if (is_hooked) {
+	if (is_hooked)
 		Unhook();
-	}
 }
 
-HookMember::HookMember(void* baseAddress, void* functionPointer, int len) {
+HookMember::HookMember(void* baseAddress, void* functionPointer) {
 	this->baseAddress = baseAddress;
 	this->functionPointer = functionPointer;
-	this->len = len;
-	this->retAddress = (DWORD)baseAddress + len;
 }
