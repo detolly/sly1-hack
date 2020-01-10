@@ -35,7 +35,6 @@ void hookPickUpCoin() {
 stdHook oTakeDamage;
 void takeDamageHook() {
 	*(UINT32*)_v0 = 0x2;
-	
 	oTakeDamage();
 }
 
@@ -85,7 +84,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	menuManager->AddMenuEntry((char*)"Godmode: Off", [](char* a) {
 		godmode = !godmode;
-		n(a, "Godmode: " + godmode ? "On." : "Off.", 16);
+		const char* b = godmode ? "On" : "Off";
+		n(a, "Godmode: " b, 16);
 	});
 	menuManager->AddMenuEntry((char*)"from",			[](char* a) { printf("greetings\r\n");});
 	menuManager->AddMenuEntry((char*)"beyond",			[](char* a) { printf("greetings\r\n");});
