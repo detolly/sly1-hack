@@ -18,14 +18,9 @@ public:
 	}
 
 	static bool FindSignature(DWORD* out, DWORD start, DWORD size, const char* sig, const char* mask, size_t offset)
-	{		size_t s = 0x1000000;
-		
-		//not efficient
+	{
 		for (DWORD i = 0; i < size; i++)
 		{
-			if (i % s == 0) {
-				//printf("testing address 0x%x\r\n", start + i);
-			}
 			if (MemoryCompare(start + i, sig, mask)) {
 				printf("found signature at 0x%x\r\n", start + i);
 				*out = start + i + offset;

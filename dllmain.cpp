@@ -23,13 +23,13 @@ Strings* gameStrings;
 Strings originalStrings;
 Strings myStrings;
 
+LPVOID Param;
+
 Vector3* slyPosition;
 Rotation* slyRotation;
-LPVOID Param;
 void exit_app();
 
 HookManager hookManager;
-typedef void(__cdecl* stdHook)();
 
 stdHook oPickUpCoin;
 void hookPickUpCoin() {
@@ -154,8 +154,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oTakeDamage = (stdHook)hookManager.Get(charmHookHandle)->Hook();
 	*/
 	
-	int renderMenuHandle = hookManager.AddHook(HookMember((void*)0x20194FDC, &renderMenuHook));
-	oRenderMenu = (stdHook)hookManager.Get(renderMenuHandle)->Hook();
 	
 	/*
 	int fishHandle = hookManager.AddHook(HookMember((void*)0x201ABB58, &fishHook));
@@ -163,7 +161,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 	*/
 
 	/*
-	int slyHitHandle = hookManager.AddHook(HookMember((void*)0x2013BF30, &hookedSlyHit));
 	oSlyHit = (stdHook)hookManager.Get(slyHitHandle)->Hook();
 	*/
 
@@ -177,18 +174,16 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oPressedInMenu = (stdHook)hookManager.Get(pressedMenuHandle)->Hook();
 	*/
 
+	int renderMenuHandle = hookManager.AddHook((void*)0x20194FDC, &renderMenuHook, &oRenderMenu);
+	int slyHitHandle = hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit, &oSlyHit);
+	hookManager.HookAll(param);
+
 	bool registeredDOWN = false;
 	bool registeredUP = false;
 	bool registeredPGDN = false;
 	bool registeredENTER = false;
 
-	unsigned long long frames = 0;
 	while (true) {
-		frames++;
-		//do hacking 
-		if (frames % 500 == 0) {
-			//printf("Position (0x%x): %.2f\t%.2f\t%.2f\r\n", (DWORD)slyPosition, slyPosition->x, slyPosition->y, slyPosition->z);
-		}
 		if (GetAsyncKeyState(VK_ESCAPE)) break;
 		if (GetAsyncKeyState(VK_DOWN)) {
 			if (!registeredDOWN) {
@@ -234,9 +229,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 }
 
 void exit_app() {
-	printf("Unhooking, don't close\r\n");
-	hookManager.UnhookAll();
-	printf("Now you can close\r\n");
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
 }
