@@ -23,13 +23,14 @@ Strings* gameStrings;
 Strings originalStrings;
 Strings myStrings;
 
+LPVOID Param;
+HMODULE hmodule;
+
 Vector3* slyPosition;
 Rotation* slyRotation;
-LPVOID Param;
 void exit_app();
 
 HookManager hookManager;
-typedef void(__cdecl* stdHook)();
 
 stdHook oPickUpCoin;
 void hookPickUpCoin() {
@@ -154,8 +155,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oTakeDamage = (stdHook)hookManager.Get(charmHookHandle)->Hook();
 	*/
 	
-	int renderMenuHandle = hookManager.AddHook(HookMember((void*)0x20194FDC, &renderMenuHook));
-	oRenderMenu = (stdHook)hookManager.Get(renderMenuHandle)->Hook();
+	int renderMenuHandle = hookManager.AddHook(HookMember((void*)0x20194FDC, &renderMenuHook, &oRenderMenu));
 	
 	/*
 	int fishHandle = hookManager.AddHook(HookMember((void*)0x201ABB58, &fishHook));
@@ -176,6 +176,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 	int pressedMenuHandle = hookManager.AddHook(HookMember((void*)0x20195964, &selectInMenu));
 	oPressedInMenu = (stdHook)hookManager.Get(pressedMenuHandle)->Hook();
 	*/
+
+	printf("got here");
+	hookManager.HookAll(hmodule);
+	printf("got here");
 
 	bool registeredDOWN = false;
 	bool registeredUP = false;
@@ -234,9 +238,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 }
 
 void exit_app() {
-	printf("Unhooking, don't close\r\n");
-	hookManager.UnhookAll();
-	printf("Now you can close\r\n");
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
 }
@@ -246,6 +247,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserve
     switch (ul_reason_for_call)
     {
 		case DLL_PROCESS_ATTACH:
+			hmodule = hModule;
 			CreateThread(0, 0, MainThread, hModule, 0, 0);
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:

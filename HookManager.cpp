@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "HookManager.h"
 #include "sigscan.h"
+#include "vector"
 
 HookManager::HookManager() { count = 0; }
 
@@ -10,109 +11,84 @@ int HookManager::AddHook(HookMember h) {
 	return id;
 }
 
+HookManager* manager;
+
+bool find(int i, std::vector<int>* c) {
+	for (int k = 0; k < c->size(); k++)
+		if (c->at(k) == i)
+			return true;
+	return false;
+}
+
+DWORD WINAPI HookThread(LPVOID param) {
+	// for cheat engine reference: 8b 0d c0 9b 8d 00 81 c1 37
+	static const char*	hookString		= "\x8B\x0D\xC0\x9B\x8D\x00\x81\xC1\x37\x13\x00\x00\x89\xC8";
+	static const char*	hookMask		= "xxxxxxxxxxxxxx";
+	static int			length			= 39;
+	static DWORD		start			= 0x30000000;
+	static DWORD		size			= 0x01000000;
+	DWORD				old				= 0x0;
+
+	DWORD hookLocation = 0x0;
+	std::vector<int> completed;
+	while (true) {
+		for (int i = 0; i < manager->hooks.size(); i++) {
+			if (find(i, &completed))
+				continue;
+
+			if (!SignatureScanner::FindSignature(&hookLocation, start, size, hookString, hookMask, 0)) {
+				continue;
+			}
+
+			completed.push_back(i);
+
+			VirtualProtect((void*)hookLocation, length, PAGE_EXECUTE_READWRITE, &old);
+
+			memset((void*)hookLocation, 0x90, length);
+			*(BYTE*)hookLocation = 0xE9;
+			*(DWORD*)(hookLocation + 1) = ((DWORD)manager->hooks.at(i).functionPointer - hookLocation - 5);
+
+
+			VirtualProtect((void*)hookLocation, length, old, nullptr);
+			*(manager->hooks.at(i).retAddress) = (stdHook)(hookLocation + 6);
+		}
+		if (completed.size() == manager->hooks.size())
+			break;
+		Sleep(200);
+	}
+}
+
+void HookManager::HookAll(HMODULE hmodule) {
+	printf("got here 3");
+	for (int i = 0; i < hooks.size(); i++) {
+		hooks.at(i).Hook();
+	}
+	printf("got here 1.5");
+	manager = this;
+	printf("got here 2");
+	CreateThread(0, 0, HookThread, hmodule, 0, 0);
+	printf("got here 3");
+};
+
+
 HookMember* HookManager::Get(int id) {
 	return &this->hooks.at(id);
 }
 
-void HookManager::UnhookAll() {
-	for (size_t i = 0; i < this->hooks.size(); i++) {
-		this->hooks.at(i).Unhook();
-	}
-}
-
-/* deprecated
-void* HookMember::Hook() {
-	if (this->is_hooked) {
-		return (void*)retAddress;
-	}
-
-	if (len < 5) {
-		return nullptr;
-	}
-
-	DWORD old;
-	VirtualProtect(this->baseAddress, len, PAGE_EXECUTE_READWRITE, &old);
-
-	this->oldBytes = new BYTE[len];
-	memcpy(this->oldBytes, (void*)this->baseAddress, len);
-	printf("Hooking %x with %d length. (fp: %x)\r\n", (DWORD)this->baseAddress, len, (DWORD)this->functionPointer);
-	memset((void*)this->baseAddress, 0x90, len);
-
-	DWORD relativeAddress = (DWORD)this->functionPointer-(DWORD)this->baseAddress-5;
-	*(BYTE*)(this->baseAddress) = 0xE9;
-	*(DWORD*)((DWORD)this->baseAddress + 1) = relativeAddress;
-
-	VirtualProtect(this->baseAddress, len, old, NULL);
-
-	this->is_hooked = true;
-
-	return (void*)retAddress;
-}
-*/
-
-DWORD HookMember::Hook() {
-	if (this->is_hooked) {
-		return this->retAddress;
-	}
-
-	oldBytes = new BYTE[strlen(bytesToReplace)];
-
-	DWORD start = 0x30000000; //recompiler address space
-	DWORD size = 0x1000000;
-
+void HookMember::Hook() {
+	static const char* bytesToReplace	= "\x37\x13\x9B\x8D"; /* 9b was 8f for t7 */
 	DWORD old = 0x0;
+	printf("got here 5");
+
 	VirtualProtect(baseAddress, strlen(bytesToReplace), PAGE_EXECUTE_READWRITE, &old);
 	memcpy(oldBytes, baseAddress, strlen(bytesToReplace));
 	memcpy(baseAddress, bytesToReplace, strlen(bytesToReplace));
 	VirtualProtect(baseAddress, strlen(bytesToReplace), old, nullptr);
-	
-	DWORD hookLocation = 0x0;
-	while (true) {
-		printf("sigscanning for hook...\r\n");
-		if (!SignatureScanner::FindSignature(&hookLocation, start, size, hookString, hookMask, 0)) {
-			Sleep(100);
-		}
-		else break;
-	}
-	printf("Hook location found at: 0x%x\r\n", hookLocation);
-	
-	VirtualProtect((void*)hookLocation, length, PAGE_EXECUTE_READWRITE, &old);
-
-	memset((void*)hookLocation, 0x90, length);
-	*(BYTE*)hookLocation = 0xE9;
-	*(DWORD*)(hookLocation + 1) = ((DWORD)functionPointer - hookLocation - 5);
-
-
-	VirtualProtect((void*)hookLocation, length, old, nullptr);
-
-	printf("return ptr: 0x%x\r\n", hookLocation + 6);
-	retAddress = hookLocation+6;
-	
-
-	return retAddress;
+	printf("got here 6");
 }
 
-bool HookMember::Unhook() {
-	if (!is_hooked) {
-		return false;
-	}
-
-	DWORD old;
-	VirtualProtect(baseAddress, strlen(bytesToReplace), PAGE_EXECUTE_READWRITE, &old);
-	memcpy(baseAddress, oldBytes, strlen(bytesToReplace));
-	VirtualProtect(baseAddress, strlen(bytesToReplace), old, nullptr);
-	
-	this->is_hooked = false;
-
-	return true;
-}
-
-HookMember::~HookMember() {
-	if (is_hooked)
-		Unhook();
-}
-
-HookMember::HookMember(void* baseAddress, void* functionPointer) {
+HookMember::HookMember(void* baseAddress, void* functionPointer, stdHook* ret) {
 	this->baseAddress = baseAddress;
 	this->functionPointer = functionPointer;
+	this->retAddress = ret;
 }
