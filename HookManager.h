@@ -8,7 +8,7 @@ struct HookMember {
 private:
 							// for cheat engine reference: 8b 0d c0 9b 8d 00 81 c1 37
 	const char* hookString = "\x8B\x0D\xC0\x9B\x8D\x00\x81\xC1\x37\x13\x00\x00\x89\xC8";
-	int length = 51;
+	int length = 39;
 	const char* hookMask = "xxxxxxxxxxxxxx";
 	const char* bytesToReplace = "\x37\x13\x9B\x8D"; /* 9b was 8f for t7 */
 	

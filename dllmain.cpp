@@ -8,12 +8,18 @@
 #include "Menu.h"
 #include "registers.h"
 #include "Strings.h"
+#include "rgb.h"
 
 bool showCustomMenu = false;
 Menu* m = (Menu*)0x2026FF68;
 
+// this function has to do with animations: 00124fc0
+
+// 001749A4: jumped to if ledgegrabbing
+// 0018FCF0: stores the opacity of stuff - this one will be fun
+
 MenuManager* menuManager;
-Strings* gameStrings = (Strings*)0x2024B660;
+Strings* gameStrings;
 Strings originalStrings;
 Strings myStrings;
 
@@ -22,33 +28,56 @@ Rotation* slyRotation;
 LPVOID Param;
 void exit_app();
 
-
 HookManager hookManager;
 typedef void(__cdecl* stdHook)();
 
 stdHook oPickUpCoin;
 void hookPickUpCoin() {
-
 	oPickUpCoin();
 }
 
-stdHook oTakeDamage;
-void takeDamageHook() {
-	*(UINT32*)_v0 = 0x2;
-	oTakeDamage();
+bool godmode = false;
+bool unlimitedFish = false;
+
+stdHook oSlyHit;
+void hookedSlyHit() {
+	if (godmode) {
+		DWORD temp = r->s1.UD[0];
+		while (*(DWORD*)(temp+0x20000000) != 0)
+			temp += 4;
+		printf("found a temp: 0x%x, original s1: 0x%x\r\n", temp, r->s1.UW[0]);
+		r->a0.UD[0] = temp;
+	}
+	else  r->a0.UD[0] = r->s1.UD[0];
+	oSlyHit();
+}
+
+stdHook oFishTimer;
+void fishHook() {
+	if (!unlimitedFish) {
+		*_f01 = *_f01 + *_f00;
+	}
+	oFishTimer();
 }
 
 stdHook oPressedInMenu;
 void selectInMenu() {
-	*(UINT32*)_v0 -= 0x62B0;
+	r->v0.UW[0] -= 0x62B0;
 	oPressedInMenu();
 }
 
+hsv h;
+rgba oldrgb;
+DWORD rgbaddress;
+
 stdHook oRenderMenu;
-int cooldown = 0;
 void renderMenuHook() {
-	*(UINT32*)_v0 = *(UINT32*)(_s2+0x250);
+	r->v0.UW[0] = *(u32*)((DWORD)(r->s2.UW[0] + 0x250)+0x20000000);
 	if (showCustomMenu) {
+		h.h++; if (h.h > 360) h.h = 0;
+		printf("h.h: %d\r\n", h.h);
+		hsvrgb(&h, (rgba*)rgbaddress);
+		((rgba*)rgbaddress)->a = 0x80;
 		if (m->highlightedIndex > 4) {
 			menuManager->setIndex(true);
 			m->highlightedIndex = 4;
@@ -56,20 +85,64 @@ void renderMenuHook() {
 			menuManager->setIndex(false);
 			m->highlightedIndex = 0;
 		}
+		m->x = 25;
+		m->y = 50;
+		m->menuScale = 0.7f;
 	}
 	oRenderMenu();
 }
 
-bool godmode = false;
+stdHook oChangeOpacity;
+void hookedChangeOpacity() {
+	//idk what this is or was
+	oChangeOpacity();
+}
 
 DWORD WINAPI MainThread(LPVOID param) {
 	AllocConsole();
 	FILE* fp;
 	freopen_s(&fp, "CONOUT$", "w", stdout);
 	freopen_s(&fp, "CONIN$", "w", stdin);
-	
+
+	// 205 205 205 128 205 205 205 17
+	if (SignatureScanner::FindSignature(&rgbaddress, 0x20600000, 0x100000, "\xCD\xCD\xCD\x80\xCD\xCD\xCD\x11", "xxxxxxxx", 0))
+		printf("found rgb\r\n");
+	else
+		printf("didn't find rgb\r\n"); 
+
+	h.h = 0;
+	h.s = 1.f;
+	h.v = 1.f;
+	oldrgb = *(rgba*)rgbaddress;
+
+	DWORD pGameStrings = 0x0;
+	SignatureScanner::FindSignature(&pGameStrings , 0x20000000, 0x10000000, "Paused", "xxxxxx", 0);
+	gameStrings = (Strings*)pGameStrings;
+
 	Param = param;
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
+	menuManager = new MenuManager(&myStrings, gameStrings);
+
+	menuManager->AddMenuEntry((char*)"Godmode: Off", [](char* a) {
+		godmode = !godmode;
+		char c[16] = "Godmode: ";
+		strcat(c, godmode ? "On" : "Off");
+		n(a, c, 16);
+
+	});
+	menuManager->AddMenuEntry((char*)"Fish timer: On", [](char* a) { 
+		unlimitedFish = !unlimitedFish;
+		char c[16] = "Fish timer: ";
+		strcat(c, unlimitedFish ? "Off" : "On");
+		n(a, c, 16);
+	});
+	menuManager->AddMenuEntry((char*)"beyond",			[](char* a) { printf("greetings\r\n"); });
+	menuManager->AddMenuEntry((char*)"the",				[](char* a) { printf("greetings\r\n"); });
+	menuManager->AddMenuEntry((char*)"grave",			[](char* a) { printf("greetings\r\n"); });
+	menuManager->AddMenuEntry((char*)"you",				[](char* a) { printf("greetings\r\n"); });
+	menuManager->AddMenuEntry((char*)"maggot",			[](char* a) { printf("greetings\r\n"); });
+	menuManager->AddMenuEntry((char*)"loving",			[](char* a) { printf("greetings\r\n"); });
+	menuManager->AddMenuEntry((char*)"tspark2Weird",	[](char* a) { printf("greetings\r\n"); });
 
 	//  addresses are not hard coded so to speak, they're just references to the actual MIPS game code,
 	//  and not the translated x86 msvc that you see in cheat engine f. ex.
@@ -80,24 +153,24 @@ DWORD WINAPI MainThread(LPVOID param) {
 	int charmHookHandle = hookManager.AddHook(HookMember((void*)0x20192C8C, &takeDamageHook));
 	oTakeDamage = (stdHook)hookManager.Get(charmHookHandle)->Hook();
 	*/
-	menuManager = new MenuManager(&myStrings, gameStrings);
-
-	menuManager->AddMenuEntry((char*)"Godmode: Off", [](char* a) {
-		godmode = !godmode;
-		const char* b = godmode ? "On" : "Off";
-		n(a, "Godmode: " b, 16);
-	});
-	menuManager->AddMenuEntry((char*)"from",			[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"beyond",			[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"the",				[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"grave",			[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"you",				[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"maggot",			[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"loving",			[](char* a) { printf("greetings\r\n");});
-	menuManager->AddMenuEntry((char*)"tspark2Weird",	[](char* a) { printf("greetings\r\n");});
-
+	
 	int renderMenuHandle = hookManager.AddHook(HookMember((void*)0x20194FDC, &renderMenuHook));
 	oRenderMenu = (stdHook)hookManager.Get(renderMenuHandle)->Hook();
+	
+	/*
+	int fishHandle = hookManager.AddHook(HookMember((void*)0x201ABB58, &fishHook));
+	oFishTimer = (stdHook)hookManager.Get(fishHandle)->Hook();
+	*/
+
+	/*
+	int slyHitHandle = hookManager.AddHook(HookMember((void*)0x2013BF30, &hookedSlyHit));
+	oSlyHit = (stdHook)hookManager.Get(slyHitHandle)->Hook();
+	*/
+
+	/*
+	int opacityHookHandle = hookManager.AddHook(HookMember((void*)0x2018FCF0, &hookedChangeOpacity));
+	oChangeOpacity = (stdHook)hookManager.Get(opacityHookHandle)->Hook();
+	*/
 
 	/*
 	int pressedMenuHandle = hookManager.AddHook(HookMember((void*)0x20195964, &selectInMenu));
@@ -139,9 +212,11 @@ DWORD WINAPI MainThread(LPVOID param) {
 				{
 					menuManager->Update();
 					showCustomMenu = !showCustomMenu;
-					*gameStrings = showCustomMenu ? myStrings : originalStrings;
-					m->isMenuOpen = showCustomMenu ? 1 : 0;
+					*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
 					m->menuStatus = showCustomMenu ? 1 : 3;
+					m->isMenuOpen = showCustomMenu ? 1 : 0;
+					m->menuFade = showCustomMenu ? 0.f : 2.f;
+					*gameStrings = showCustomMenu ? myStrings : originalStrings;
 				}
 			}
 		} else registeredPGDN = false;

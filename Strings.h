@@ -12,7 +12,7 @@ struct Strings {
 	char savegame[16];
 	char centerScreen[16];
 	char buffer1[8];
-	char Back[8];
+	char back[8];
 	char restartRace[16];
 	char restartSprint[16];
 	char restartLevel[16];
@@ -21,6 +21,13 @@ struct Strings {
 	char controls[16];
 	char empty[8];
 	char quitgame[16];
+	char saveandquit[16];
+	char vibrationson[16];
+	char vibrationsoff[16];
+	char musicon[16];
+	char musicoff[16];
+	char speakersstereo[24];
+	char speakersmono[16];
 };
 char* realquitgame = (char*)0x2026A540;
 
@@ -38,11 +45,11 @@ static Strings createHookStrings(Strings def) {
 
 struct Hack {
 public:
-	char* name;
+	char name[16];
 	MenuCallback f;
 
 	Hack(char* name, MenuCallback func) {
-		this->name = name;
+		n(this->name, name, 16);
 		this->f = func;
 	}
 };
@@ -60,7 +67,7 @@ public:
 		hacks = new std::vector<Hack>();
 		this->gameStrings = gameStrings;
 		this->hackStrings = hackStrings;
-		n(this->hackStrings->headline, "HookerBeer", 16);
+		n(this->hackStrings->headline, "___HookerBeer___", 16);
 		n(realquitgame, "", 16);
 	}
 	
@@ -79,18 +86,17 @@ public:
 
 	void Update() {
 		for (int i = 0; i < min(hacks->size(), 5); i++) {
-			if (i == 4) {
+			if (i == 4)
 				n(realquitgame, hacks->at(startNum + i).name, 16);
-				printf("setting the ugly one in the corner you know the fucker! \r\n");
-			}
 			char* place[] = { hackStrings->returnToGame, hackStrings->viewmap, hackStrings->options, hackStrings->exitToHideout, hackStrings->quitgame };
 			n(place[i], hacks->at(startNum + i).name, 16);
 		}
 	}
 
 	void execute(int index) {
-		hacks->at(index + startNum).f((hacks->at(index+startNum).name));
+		hacks->at(index + startNum).f(hacks->at(index + startNum).name);
 		Update();
+		*gameStrings = *hackStrings;
 	}
 };
 

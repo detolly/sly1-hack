@@ -15,9 +15,11 @@ struct Menu {
 	int menuStatus;
 	char buffer5[8];
 	int isMenuOpen;
-	int unknown1;
+	int menuIndex;
 	int highlightedIndex;
 	int unknown2;
-	char buffer6[24];
+	char buffer6[12];
 	float unknown3;
+	char buffer7[8];
+	float menuFade;
 };
