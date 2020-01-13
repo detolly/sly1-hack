@@ -8,21 +8,22 @@ typedef void(__cdecl* stdHook)();
 struct HookMember {
 public:
 	void* baseAddress;
+	char handle;
 	void* functionPointer;
-	BYTE* oldBytes;
 	stdHook* retAddress;
+	char hookString[14];
 
-	HookMember(void*, void*, stdHook*);
+	HookMember(void*, void*, stdHook*, int);
 	void Hook();
 };
 
 class HookManager {
 private:
 public:
-	map<int, HookMember> hooks;
+	map<char, HookMember> hooks;
 	int count;
-	int AddHook(HookMember);
-	HookMember* Get(int);
+	int AddHook(void*, void*, stdHook*);
+	HookMember* Get(char);
 	void HookAll(HMODULE);
 	HookManager();
 };

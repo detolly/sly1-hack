@@ -155,7 +155,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oTakeDamage = (stdHook)hookManager.Get(charmHookHandle)->Hook();
 	*/
 	
-	int renderMenuHandle = hookManager.AddHook(HookMember((void*)0x20194FDC, &renderMenuHook, &oRenderMenu));
 	
 	/*
 	int fishHandle = hookManager.AddHook(HookMember((void*)0x201ABB58, &fishHook));
@@ -177,6 +176,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oPressedInMenu = (stdHook)hookManager.Get(pressedMenuHandle)->Hook();
 	*/
 
+	int renderMenuHandle = hookManager.AddHook((void*)0x20194FDC, &renderMenuHook, &oRenderMenu);
 	printf("got here");
 	hookManager.HookAll(hmodule);
 	printf("got here");
