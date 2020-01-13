@@ -23,13 +23,14 @@ Strings* gameStrings;
 Strings originalStrings;
 Strings myStrings;
 
+LPVOID Param;
+HMODULE hmodule;
+
 Vector3* slyPosition;
 Rotation* slyRotation;
-LPVOID Param;
 void exit_app();
 
 HookManager hookManager;
-typedef void(__cdecl* stdHook)();
 
 stdHook oPickUpCoin;
 void hookPickUpCoin() {
@@ -66,6 +67,13 @@ void selectInMenu() {
 	oPressedInMenu();
 }
 
+stdHook oAccessSlyPosition;
+void hkAccessSlyPosition() {
+	r->a0.UW[0] = *(DWORD*)((r->s0.UW[0] + 0x1EC)+0x20000000);
+	slyPosition = (Vector3*)(r->s0.UW[0]+0x100+0x20000000);
+	oAccessSlyPosition();
+}
+
 hsv h;
 rgba oldrgb;
 DWORD rgbaddress;
@@ -75,7 +83,6 @@ void renderMenuHook() {
 	r->v0.UW[0] = *(u32*)((DWORD)(r->s2.UW[0] + 0x250)+0x20000000);
 	if (showCustomMenu) {
 		h.h++; if (h.h > 360) h.h = 0;
-		printf("h.h: %d\r\n", h.h);
 		hsvrgb(&h, (rgba*)rgbaddress);
 		((rgba*)rgbaddress)->a = 0x80;
 		if (m->highlightedIndex > 4) {
@@ -167,6 +174,9 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oSlyHit = (stdHook)hookManager.Get(slyHitHandle)->Hook();
 	*/
 
+	int fishHandle = hookManager.AddHook(HookMember((void*)0x201ABB58, &fishHook));
+	oFishTimer = (stdHook)hookManager.Get(fishHandle)->Hook();
+
 	/*
 	int opacityHookHandle = hookManager.AddHook(HookMember((void*)0x2018FCF0, &hookedChangeOpacity));
 	oChangeOpacity = (stdHook)hookManager.Get(opacityHookHandle)->Hook();
@@ -176,6 +186,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 	int pressedMenuHandle = hookManager.AddHook(HookMember((void*)0x20195964, &selectInMenu));
 	oPressedInMenu = (stdHook)hookManager.Get(pressedMenuHandle)->Hook();
 	*/
+
+	printf("got here");
+	hookManager.HookAll(hmodule);
+	printf("got here");
 
 	bool registeredDOWN = false;
 	bool registeredUP = false;
@@ -234,9 +248,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 }
 
 void exit_app() {
-	printf("Unhooking, don't close\r\n");
-	hookManager.UnhookAll();
-	printf("Now you can close\r\n");
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
 }
@@ -246,6 +257,7 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserve
     switch (ul_reason_for_call)
     {
 		case DLL_PROCESS_ATTACH:
+			hmodule = hModule;
 			CreateThread(0, 0, MainThread, hModule, 0, 0);
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
