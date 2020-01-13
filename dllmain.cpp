@@ -24,7 +24,6 @@ Strings originalStrings;
 Strings myStrings;
 
 LPVOID Param;
-HMODULE hmodule;
 
 Vector3* slyPosition;
 Rotation* slyRotation;
@@ -162,7 +161,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 	*/
 
 	/*
-	int slyHitHandle = hookManager.AddHook(HookMember((void*)0x2013BF30, &hookedSlyHit));
 	oSlyHit = (stdHook)hookManager.Get(slyHitHandle)->Hook();
 	*/
 
@@ -177,22 +175,15 @@ DWORD WINAPI MainThread(LPVOID param) {
 	*/
 
 	int renderMenuHandle = hookManager.AddHook((void*)0x20194FDC, &renderMenuHook, &oRenderMenu);
-	printf("got here");
-	hookManager.HookAll(hmodule);
-	printf("got here");
+	int slyHitHandle = hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit, &oSlyHit);
+	hookManager.HookAll(param);
 
 	bool registeredDOWN = false;
 	bool registeredUP = false;
 	bool registeredPGDN = false;
 	bool registeredENTER = false;
 
-	unsigned long long frames = 0;
 	while (true) {
-		frames++;
-		//do hacking 
-		if (frames % 500 == 0) {
-			//printf("Position (0x%x): %.2f\t%.2f\t%.2f\r\n", (DWORD)slyPosition, slyPosition->x, slyPosition->y, slyPosition->z);
-		}
 		if (GetAsyncKeyState(VK_ESCAPE)) break;
 		if (GetAsyncKeyState(VK_DOWN)) {
 			if (!registeredDOWN) {
@@ -247,7 +238,6 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserve
     switch (ul_reason_for_call)
     {
 		case DLL_PROCESS_ATTACH:
-			hmodule = hModule;
 			CreateThread(0, 0, MainThread, hModule, 0, 0);
 		case DLL_THREAD_ATTACH:
 		case DLL_THREAD_DETACH:
