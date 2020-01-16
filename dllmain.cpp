@@ -17,6 +17,8 @@
 
 // 001749A4: jumped to if ledgegrabbing
 // 0018FCF0: stores the opacity of stuff - this one will be fun
+// 147ab0 - is called when you pick up a coin / maybe when entities are interacted with
+
 #pragma region declarations
 bool showCustomMenu = false;
 Menu* m = (Menu*)0x2026FF68;
@@ -28,14 +30,15 @@ Strings myStrings;
 
 LPVOID Param;
 
-Vector3* slyPosition;
+DWORD slyEntity;
+DWORD storedSlyCollision;
 Rotation* slyRotation;
 void exit_app();
 #pragma endregion declarations
 
 #pragma region hooks
 
-HookManager hookManager;
+HookManager* hookManager;
 stdHook oPickUpCoin;
 void hookPickUpCoin() {
 	r->v0.UW[0] = 69;
@@ -85,9 +88,11 @@ stdHook oRenderMenu;
 void renderMenuHook() {
 	r->v0.UW[0] = *(u32*)((DWORD)(r->s2.UW[0] + 0x250) + 0x20000000);
 	if (showCustomMenu) {
+		/*
 		h.h++; if (h.h > 360) h.h = 0;
 		hsvrgb(&h, (rgba*)rgbaddress);
 		((rgba*)rgbaddress)->a = 0x80;
+		*/
 		if (m->highlightedIndex > 4) {
 			menuManager->setIndex(true);
 			m->highlightedIndex = 4;
@@ -108,6 +113,24 @@ void hookedChangeOpacity() {
 	//idk what this is or was
 	oChangeOpacity();
 }
+
+bool noclip = false;
+
+stdHook oAccessSlyPosition;
+void hkSlyPosition() {
+	r->s3.UW[0] = 0x1;
+	slyEntity = (r->s0.UW[0]+0x20000000);
+	oAccessSlyPosition();
+}
+
+stdHook oSetVelocity;
+void hkSetVelocity() {
+	r->v0.UW[0] += 0x1858;
+	if (noclip)
+		*(float*)(r->s0.UW[0]+0x20000000 + 0x158) = 20.f;
+	oSetVelocity();
+}
+
 #pragma endregion hooks
 
 
@@ -136,59 +159,61 @@ DWORD WINAPI MainThread(LPVOID param) {
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
 	menuManager = new MenuManager(&myStrings, gameStrings);
 
+	MenuEntry* placeholder = new MenuEntry("placeholder");
+	SubMenu* s = new SubMenu("General", menuManager);
 	MenuEntry* godmodee = new DelegateEntry((char*)"Godmode: Off", [](char* a) {
 		godmode = !godmode;
 		char c[16] = "Godmode: ";
 		strcat(c, godmode ? "On" : "Off");
 		n(a, c, 16);
 	});
+	MenuEntry* noclipp = new DelegateEntry((char*)"Noclip: Off", [](char* a) {
+		noclip = !noclip;
+		if (noclip) {
+			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
+			*(DWORD*)(slyEntity + 0x14) = 0;
+		}
+		else {
+			*(DWORD*)(slyEntity + 0x14) = storedSlyCollision;
+		}
+		char c[16] = "Noclip: ";
+		strcat(c, noclip ? "On" : "Off");
+		n(a, c, 16);
+	});
+	s->AddMenuEntry(godmodee);
+	s->AddMenuEntry(noclipp);
+	s->AddMenuEntry(placeholder);
+	s->AddMenuEntry(placeholder);
+	s->AddMenuEntry(placeholder);
+	s->AddMenuEntry(placeholder);
 
+	SubMenu* s2 = new SubMenu("Misc", menuManager);
 	MenuEntry* fish = new DelegateEntry((char*)"Fish timer: On", [](char* a) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
 		strcat(c, unlimitedFish ? "Off" : "On");
 		n(a, c, 16);
 	});
+	s2->AddMenuEntry(fish);
+	s2->AddMenuEntry(placeholder);
+	s2->AddMenuEntry(placeholder);
+	s2->AddMenuEntry(placeholder);
+	s2->AddMenuEntry(placeholder);
 
-	menuManager->AddMenuEntry(godmodee);
-	menuManager->AddMenuEntry(fish);
-
-	SubMenu* s = new SubMenu("Sonic", menuManager);
-	MenuEntry* x = new DelegateEntry("Sonic",		[](char* a) { printf("asd\r\n"); });
-	MenuEntry* x1 = new DelegateEntry("likes",		[](char* a) { printf("asd\r\n"); });
-	MenuEntry* x2 = new DelegateEntry("grass",		[](char* a) { printf("asd\r\n"); });
-	MenuEntry* x3 = new DelegateEntry("rhymes",		[](char* a) { printf("asd\r\n"); });
-	MenuEntry* x4 = new DelegateEntry("with ass",	[](char* a) { printf("asd\r\n"); });
-	s->AddMenuEntry(x);
-	s->AddMenuEntry(x1);
-	s->AddMenuEntry(x2);
-	s->AddMenuEntry(x3);
-	s->AddMenuEntry(x4);
 	menuManager->AddMenuEntry(s);
-
-	SubMenu* s2 = new SubMenu("tSparkles", menuManager);
-	MenuEntry* y1 = new DelegateEntry("likely", [](char* a) { printf("asd2\r\n"); });
-	MenuEntry* y2 = new DelegateEntry("the",	[](char* a) { printf("asd2\r\n"); });
-	MenuEntry* y3 = new DelegateEntry("best",	[](char* a) { printf("asd2\r\n"); });
-	MenuEntry* y4 = new DelegateEntry("sly",	[](char* a) { printf("asd2\r\n"); });
-	MenuEntry* y5 = new DelegateEntry("player", [](char* a) { printf("asd2\r\n"); });
-	MenuEntry* y6 = new DelegateEntry("ever",	[](char* a) { printf("asd2\r\n"); });
-	s2->AddMenuEntry(y1);
-	s2->AddMenuEntry(y2);
-	s2->AddMenuEntry(y3);
-	s2->AddMenuEntry(y4);
-	s2->AddMenuEntry(y5);
-	s2->AddMenuEntry(y6);
 	menuManager->AddMenuEntry(s2);
 
-	MenuEntry* best = new DelegateEntry("What comes next?", [](char* a) { printf("asd\r\n"); });
-	menuManager->AddMenuEntry(best);
+	menuManager->AddMenuEntry(placeholder);
+	menuManager->AddMenuEntry(placeholder);
+	menuManager->AddMenuEntry(placeholder);
+	menuManager->AddMenuEntry(placeholder);
+	menuManager->AddMenuEntry(placeholder);
+	menuManager->AddMenuEntry(placeholder);
 
 	//  addresses are not hard coded so to speak, they're just references to the actual MIPS game code,
 	//  and not the translated x86 msvc that you see in cheat engine f. ex.
 	
 	/*
-	int fishHandle = hookManager.AddHook(HookMember((void*)0x201ABB58, &fishHook));
 	oFishTimer = (stdHook)hookManager.Get(fishHandle)->Hook();
 	
 
@@ -196,12 +221,18 @@ DWORD WINAPI MainThread(LPVOID param) {
 	oChangeOpacity = (stdHook)hookManager.Get(opacityHookHandle)->Hook();
 	*/
 
-	int pressedMenuHandle	= hookManager.AddHook((void*)0x20195964, &selectInMenu,		&oSelectInMenu);
-	int charmHookHandle		= hookManager.AddHook((void*)0x20192C8C, &charmDamageHook,	&oCharmDamage);
-	int coinHookHandle		= hookManager.AddHook((void*)0x201481C4, &hookPickUpCoin,	&oPickUpCoin);
-	int renderMenuHandle	= hookManager.AddHook((void*)0x20194FDC, &renderMenuHook,	&oRenderMenu);
-	int slyHitHandle		= hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit,		&oSlyHit);
-	hookManager.HookAll(param);
+	//int pressedMenuHandle	= hookManager.AddHook((void*)0x20195964, &selectInMenu,		&oSelectInMenu);
+	hookManager = new HookManager();
+	int renderMenuHandle	= hookManager->AddHook((void*)0x20194FDC, &renderMenuHook,	&oRenderMenu);
+	int charmHookHandle		= hookManager->AddHook((void*)0x20192C8C, &charmDamageHook,	&oCharmDamage);
+	int coinHookHandle		= hookManager->AddHook((void*)0x201481C4, &hookPickUpCoin,	&oPickUpCoin);
+	int slyHitHandle		= hookManager->AddHook((void*)0x2013BF30, &hookedSlyHit,	&oSlyHit); 
+	int slyPositionHandle	= hookManager->AddHook((void*)0x2012551C, &hkSlyPosition,	&oAccessSlyPosition);
+	int setVelocityHandle	= hookManager->AddHook((void*)0x20125510, &hkSetVelocity,	&oSetVelocity);
+	int fishHandle			= hookManager->AddHook((void*)0x201ABB58, &fishHook,		&oFishTimer);
+
+	
+	hookManager->HookAll(param);
 
 	bool registeredDOWN		= false;
 	bool registeredUP		= false;
@@ -243,7 +274,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 		} else registeredPGDN = false;
 		if (GetAsyncKeyState(VK_LEFT)) {
 			if (!registeredLEFT) {
-				printf("left\r\n");
 				if (showCustomMenu)
 					menuManager->Back();
 				registeredLEFT = true;
