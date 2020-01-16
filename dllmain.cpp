@@ -241,7 +241,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	bool registeredLEFT		= false;
 
 	while (true) {
-		if (GetAsyncKeyState(VK_ESCAPE)) break;
+		//if (GetAsyncKeyState(VK_ESCAPE)) break;
 		if (GetAsyncKeyState(VK_DOWN)) {
 			if (!registeredDOWN) {
 				registeredDOWN = true;
