@@ -119,7 +119,8 @@ bool noclip = false;
 stdHook oAccessSlyPosition;
 void hkSlyPosition() {
 	r->s3.UW[0] = 0x1;
-	slyEntity = (r->s0.UW[0]+0x20000000);
+	if (*(DWORD*)(r->s0.UW[0]+0x20000000+0x80) == 0x501502f9)
+		slyEntity = (r->s0.UW[0]+0x20000000);
 	oAccessSlyPosition();
 }
 
@@ -240,8 +241,16 @@ DWORD WINAPI MainThread(LPVOID param) {
 	bool registeredENTER	= false;
 	bool registeredLEFT		= false;
 
+	unsigned long long frames = 0;
+
 	while (true) {
 		//if (GetAsyncKeyState(VK_ESCAPE)) break;
+		frames++;
+		if (frames % 1000 == 0 && slyEntity)
+		{
+			Vector3* pos = (Vector3*)(slyEntity + 0x100);
+			printf("pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z);
+		}
 		if (GetAsyncKeyState(VK_DOWN)) {
 			if (!registeredDOWN) {
 				registeredDOWN = true;
