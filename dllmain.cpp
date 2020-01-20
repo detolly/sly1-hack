@@ -12,6 +12,7 @@
 #include "hooks.h"
 #include "MenuManager.h"
 #include "psapi.h"
+#include "Object.h"
 
 
 // this function has to do with animations: 00124fc0
@@ -141,6 +142,9 @@ void hkSetVelocity() {
 	oSetVelocity();
 }
 
+bool fuckedobjects = false;
+GameObject* objects = (GameObject*)0x20D8E794;
+
 #pragma endregion hooks
 
 
@@ -197,9 +201,20 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, noclip ? "On" : "Off");
 		n(a, c, 16);
 	});
+	MenuEntry* patchhitbox = new DelegateEntry((char*)"Patch Hitbox", [](char* a) {
+		if (slyEntity)
+		{
+			DWORD p = slyEntity + 0x14;
+			DWORD j = p + 0x20000000;
+			*(int*)(j + 0x34) = 10;
+			*(int*)(j + 0x38) = 11;
+		} else {
+			printf("Don't have sly entity :(\r\n");
+		}
+	});
 	s->AddMenuEntry(godmodee);
 	s->AddMenuEntry(noclipp);
-	s->AddMenuEntry(placeholder);
+	s->AddMenuEntry(patchhitbox);
 	s->AddMenuEntry(placeholder);
 	s->AddMenuEntry(placeholder);
 	s->AddMenuEntry(placeholder);
@@ -211,8 +226,21 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, unlimitedFish ? "Off" : "On");
 		n(a, c, 16);
 	});
+	MenuEntry* fuckedobjectss = new DelegateEntry((char*)"Fuck objects: Off", [](char* a) {
+		fuckedobjects = !fuckedobjects;
+		if (fuckedobjects)
+		{
+			for (int i = 0; i < 1; i++) {
+				for(unsigned int k = 5;  k < 0x110; i++)
+					objects[i].colors[k] = 255;
+			}
+		}
+		char c[16] = "Fuck objects: ";
+		strcat(c, fuckedobjects ? "On" : "Off");
+		n(a, c, 16);
+	});
 	s2->AddMenuEntry(fish);
-	s2->AddMenuEntry(placeholder);
+	s2->AddMenuEntry(fuckedobjectss);
 	s2->AddMenuEntry(placeholder);
 	s2->AddMenuEntry(placeholder);
 	s2->AddMenuEntry(placeholder);
