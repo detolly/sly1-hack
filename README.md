@@ -7,4 +7,4 @@ welcome to my sly 1 hack
 3. profit
 
 !["Image didn't work dude"](legal.PNG)
-!["fuck you"](zerk.png)'
+!["fuck you"](zerk.PNG)
