@@ -204,10 +204,11 @@ DWORD WINAPI MainThread(LPVOID param) {
 	MenuEntry* patchhitbox = new DelegateEntry((char*)"Patch Hitbox", [](char* a) {
 		if (slyEntity)
 		{
-			DWORD p = slyEntity + 0x14;
+			DWORD p = *(DWORD*)(slyEntity + 0x14);
 			DWORD j = p + 0x20000000;
-			*(int*)(j + 0x34) = 10;
-			*(int*)(j + 0x38) = 11;
+			printf("0x%p", j);
+			*(int*)(j + 0x34) = 12;
+			*(int*)(j + 0x38) = 12;
 		} else {
 			printf("Don't have sly entity :(\r\n");
 		}
