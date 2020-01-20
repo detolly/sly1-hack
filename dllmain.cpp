@@ -11,6 +11,7 @@
 #include "rgb.h"
 #include "hooks.h"
 #include "MenuManager.h"
+#include "psapi.h"
 
 
 // this function has to do with animations: 00124fc0
@@ -33,6 +34,7 @@ LPVOID Param;
 DWORD slyEntity;
 DWORD storedSlyCollision;
 Rotation* slyRotation;
+Vector3* storedLocation;
 void exit_app();
 #pragma endregion declarations
 
@@ -127,8 +129,15 @@ void hkSlyPosition() {
 stdHook oSetVelocity;
 void hkSetVelocity() {
 	r->v0.UW[0] += 0x1858;
-	if (noclip)
+	if (noclip) {
 		*(float*)(r->s0.UW[0]+0x20000000 + 0x158) = 20.f;
+		if (!showCustomMenu) {
+			if (GetAsyncKeyState(VK_UP))
+				*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = 200.f;
+			else if (GetAsyncKeyState(VK_DOWN))
+				*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = -200.0f;
+		}
+	}
 	oSetVelocity();
 }
 
@@ -159,6 +168,13 @@ DWORD WINAPI MainThread(LPVOID param) {
 	Param = param;
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
 	menuManager = new MenuManager(&myStrings, gameStrings);
+	HMODULE b = GetModuleHandle("pcsx2.exe");
+	MODULEINFO c;
+	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
+	DWORD a = 0x0;
+	SignatureScanner::FindSignature(&a, (DWORD)c.lpBaseOfDll, c.SizeOfImage, "\x00\x80\xFF\xFF\x00\x80\x07\x00\x00\xC0\x07\x00\x00\x00\x00\x00", "xxxxxxxxxxxxxxxx", -1072);
+	printf("Found registers! (0x%x)\r\n", a);
+	r = (Regs*)a;
 
 	MenuEntry* placeholder = new MenuEntry("placeholder");
 	SubMenu* s = new SubMenu("General", menuManager);
@@ -201,13 +217,39 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s2->AddMenuEntry(placeholder);
 	s2->AddMenuEntry(placeholder);
 
+	SubMenu* s3 = new SubMenu("Location", menuManager);
+	MenuEntry* savelocation = new DelegateEntry((char*)"Save Location", [](char* a) {
+		if (slyEntity)
+		{
+			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
+			if (storedLocation)
+				delete storedLocation;
+			storedLocation = new Vector3();
+			storedLocation->x = slyPos->x;
+			storedLocation->y = slyPos->y;
+			storedLocation->z = slyPos->z;
+		}
+	});
+	MenuEntry* loadlocation = new DelegateEntry((char*)"Load Location", [](char* a) {
+		if (slyEntity && storedLocation)
+		{
+			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
+			*(float*)(slyEntity + 0x150) = 0.f;
+			*(float*)(slyEntity + 0x154) = 0.f;
+			*(float*)(slyEntity + 0x158) = 0.f;
+			*slyPos = *storedLocation;
+		}
+	});
+	s3->AddMenuEntry(savelocation);
+	s3->AddMenuEntry(loadlocation);
+	s3->AddMenuEntry(placeholder);
+	s3->AddMenuEntry(placeholder);
+	s3->AddMenuEntry(placeholder);
+
 	menuManager->AddMenuEntry(s);
 	menuManager->AddMenuEntry(s2);
+	menuManager->AddMenuEntry(s3);
 
-	menuManager->AddMenuEntry(placeholder);
-	menuManager->AddMenuEntry(placeholder);
-	menuManager->AddMenuEntry(placeholder);
-	menuManager->AddMenuEntry(placeholder);
 	menuManager->AddMenuEntry(placeholder);
 	menuManager->AddMenuEntry(placeholder);
 

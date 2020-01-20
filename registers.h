@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "stdint.h"
+#include "sigscan.h"
 
 typedef char s8;
 typedef int16_t s16;
@@ -58,7 +59,7 @@ struct Regs {
 		t8, t9, k0, k1, gp, sp, s8, ra;
 };
 
-Regs* r = (Regs*)0x1B38630;
+Regs* r = (Regs*)0x01888630;
 
 float* _f00 = (float*)0x827E90;
 float* _f01 = (float*)_f00 + 0x4;
