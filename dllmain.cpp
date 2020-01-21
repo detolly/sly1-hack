@@ -13,7 +13,7 @@
 #include "MenuManager.h"
 #include "psapi.h"
 #include "Object.h"
-
+#include "EntityList.h"
 
 // this function has to do with animations: 00124fc0
 
@@ -122,7 +122,7 @@ bool noclip = false;
 stdHook oAccessSlyPosition;
 void hkSlyPosition() {
 	r->s3.UW[0] = 0x1;
-	if (*(DWORD*)(r->s0.UW[0]+0x20000000+0x80) == 0x501502f9)
+	if (*(DWORD*)(r->s0.UW[0]+0x20000000+0x08) == 5)
 		slyEntity = (r->s0.UW[0]+0x20000000);
 	oAccessSlyPosition();
 }
@@ -131,12 +131,14 @@ stdHook oSetVelocity;
 void hkSetVelocity() {
 	r->v0.UW[0] += 0x1858;
 	if (noclip) {
-		*(float*)(r->s0.UW[0]+0x20000000 + 0x158) = 20.f;
-		if (!showCustomMenu) {
-			if (GetAsyncKeyState(VK_UP))
-				*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = 200.f;
-			else if (GetAsyncKeyState(VK_DOWN))
-				*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = -200.0f;
+		if (*(int*)(r->s0.UW[0] + 0x20000000 + 0x8) == 5) {
+			*(float*)(r->s0.UW[0]+0x20000000 + 0x158) = 20.f;
+			if (!showCustomMenu) {
+				if (GetAsyncKeyState(VK_UP))
+					*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = 200.f;
+				else if (GetAsyncKeyState(VK_DOWN))
+					*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = -200.0f;
+			}
 		}
 	}
 	oSetVelocity();
@@ -206,7 +208,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		{
 			DWORD p = *(DWORD*)(slyEntity + 0x14);
 			DWORD j = p + 0x20000000;
-			printf("0x%p", j);
+			printf("0x%x", j);
 			*(int*)(j + 0x34) = 12;
 			*(int*)(j + 0x38) = 12;
 		} else {
@@ -227,16 +229,16 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, unlimitedFish ? "Off" : "On");
 		n(a, c, 16);
 	});
-	MenuEntry* fuckedobjectss = new DelegateEntry((char*)"Fuck objects: Off", [](char* a) {
+	MenuEntry* fuckedobjectss = new DelegateEntry((char*)"Textures: Off", [](char* a) {
 		fuckedobjects = !fuckedobjects;
 		if (fuckedobjects)
 		{
 			for (int i = 0; i < 1; i++) {
-				for(unsigned int k = 5;  k < 0x110; i++)
+				for (unsigned int k = 0x10; k < 0x120; k++)
 					objects[i].colors[k] = 255;
 			}
 		}
-		char c[16] = "Fuck objects: ";
+		char c[16] = "Textures: ";
 		strcat(c, fuckedobjects ? "On" : "Off");
 		n(a, c, 16);
 	});
@@ -275,9 +277,30 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s3->AddMenuEntry(placeholder);
 	s3->AddMenuEntry(placeholder);
 
+	SubMenu* s4 = new SubMenu("Entities", menuManager);
+	MenuEntry* launchEntities = new DelegateEntry((char*)"Launch Up", [](char* a) {
+		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0;
+		int i = 0;
+		do {
+			i++;
+			if (entity->address) {
+				printf("0x%x\r\n", entity->address);
+				if (*(int*)(entity->address + 0x8 + 0x20000000) != 5)
+					*(float*)(entity->address + 0x158 + 0x20000000) = 2000.f;
+			}
+			entity = (LinkedEntity*)(entity->NEXT + 0x20000000);
+		} while (entity && i < 75);
+	});
+	s4->AddMenuEntry(launchEntities);
+	s4->AddMenuEntry(placeholder);
+	s4->AddMenuEntry(placeholder);
+	s4->AddMenuEntry(placeholder);
+	s4->AddMenuEntry(placeholder);
+
 	menuManager->AddMenuEntry(s);
 	menuManager->AddMenuEntry(s2);
 	menuManager->AddMenuEntry(s3);
+	menuManager->AddMenuEntry(s4);
 
 	menuManager->AddMenuEntry(placeholder);
 	menuManager->AddMenuEntry(placeholder);
