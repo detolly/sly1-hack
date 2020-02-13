@@ -21,6 +21,8 @@
 // 0018FCF0: stores the opacity of stuff - this one will be fun
 // 00147ab0 - is called when you pick up a coin / maybe when entities are interacted with
 
+#define ps2(a) a+0x20000000
+
 #pragma region declarations
 bool showCustomMenu = false;
 Menu* m = (Menu*)0x2026FF68;
@@ -57,7 +59,7 @@ stdHook oSlyHit;
 void hookedSlyHit() {
 	if (godmode) {
 		DWORD temp = r->s1.UD[0];
-		while (*(DWORD*)(temp + 0x20000000) != 0)
+		while (*(DWORD*)(ps2(temp)) != 0)
 			temp += 4;
 		printf("found a temp: 0x%x, original s1: 0x%x\r\n", temp, r->s1.UW[0]);
 		r->a0.UD[0] = temp;
@@ -85,23 +87,11 @@ hsv h;
 rgba oldrgb;
 DWORD rgbaddress;
 
+bool rainbowMenu = false;
 stdHook oRenderMenu;
 void renderMenuHook() {
-	r->v0.UW[0] = *(u32*)((DWORD)(r->s2.UW[0] + 0x250) + 0x20000000);
+	r->v0.UW[0] = *(u32*)(ps2((DWORD)(r->s2.UW[0] + 0x250)));
 	if (showCustomMenu) {
-		/*
-		h.h++; if (h.h > 360) h.h = 0;
-		hsvrgb(&h, (rgba*)rgbaddress);
-		((rgba*)rgbaddress)->a = 0x80;
-		*/
-		if (m->highlightedIndex > 4) {
-			menuManager->setIndex(true);
-			m->highlightedIndex = 4;
-		}
-		else if (m->highlightedIndex < 0) {
-			menuManager->setIndex(false);
-			m->highlightedIndex = 0;
-		}
 		m->x = 25;
 		m->y = 50;
 		m->menuScale = 0.7f;
@@ -120,8 +110,8 @@ bool noclip = false;
 stdHook oAccessSlyPosition;
 void hkSlyPosition() {
 	r->s3.UW[0] = 0x1;
-	if (*(DWORD*)(r->s0.UW[0]+0x20000000+0x08) == 5)
-		slyEntity = (r->s0.UW[0]+0x20000000);
+	if (*(DWORD*)(ps2(r->s0.UW[0])+0x08) == 5)
+		slyEntity = (ps2(r->s0.UW[0]));
 	oAccessSlyPosition();
 }
 
@@ -129,13 +119,13 @@ stdHook oSetVelocity;
 void hkSetVelocity() {
 	r->v0.UW[0] += 0x1858;
 	if (noclip) {
-		if (*(int*)(r->s0.UW[0] + 0x20000000 + 0x8) == 5) {
-			*(float*)(r->s0.UW[0]+0x20000000 + 0x158) = 20.f;
+		if (*(int*)(ps2(r->s0.UW[0] + 0x8)) == 5) {
+			*(float*)(ps2(r->s0.UW[0] + 0x158)) = 20.f;
 			if (!showCustomMenu) {
 				if (GetAsyncKeyState(VK_UP))
-					*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = 200.f;
+					*(float*)(ps2(r->s0.UW[0] + 0x158)) = 200.f;
 				else if (GetAsyncKeyState(VK_DOWN))
-					*(float*)(r->s0.UW[0] + 0x20000000 + 0x158) = -200.0f;
+					*(float*)(ps2(r->s0.UW[0]+ 0x158)) = -200.0f;
 			}
 		}
 	}
@@ -206,7 +196,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (slyEntity)
 		{
 			DWORD p = *(DWORD*)(slyEntity + 0x14);
-			DWORD j = p + 0x20000000;
+			DWORD j = ps2(p);
 			printf("0x%x", j);
 			*(int*)(j + 0x34) = 12;
 			*(int*)(j + 0x38) = 12;
@@ -228,7 +218,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, unlimitedFish ? "Off" : "On");
 		entry.SetName(c);
 	});
-	DelegateEntry fuckedobjectss("Textures: Off",	[](MenuEntry& a) {
+	DelegateEntry fuckedobjectss("Textures: Off",	[](MenuEntry& entry) {
 		fuckedobjects = !fuckedobjects;
 		if (fuckedobjects)
 		{
@@ -239,11 +229,19 @@ DWORD WINAPI MainThread(LPVOID param) {
 		}
 		char c[16] = "Textures: ";
 		strcat(c, fuckedobjects ? "On" : "Off");
-		a.SetName(c);
+		entry.SetName(c);
+	});
+	DelegateEntry rainbowmenuu("Rainbow: Off",		[](MenuEntry& entry) {
+		rainbowMenu = !rainbowMenu;
+		if (!rainbowMenu)
+			*(rgba*)rgbaddress = oldrgb;
+		char c[16] = "Rainbow: ";
+		strcat(c, rainbowMenu ? "On" : "Off");
+		entry.SetName(c);
 	});
 	s2.AddMenuEntry(&fish);
 	s2.AddMenuEntry(&fuckedobjectss);
-	s2.AddMenuEntry(&placeholder);
+	s2.AddMenuEntry(&rainbowmenuu);
 	s2.AddMenuEntry(&placeholder);
 	s2.AddMenuEntry(&placeholder);
 
@@ -284,10 +282,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 			i++;
 			if (entity->address) {
 				printf("0x%x\r\n", entity->address);
-				if (*(int*)(entity->address + 0x8 + 0x20000000) != 5)
-					*(float*)(entity->address + 0x158 + 0x20000000) = 2000.f;
+				if (*(int*)(ps2(entity->address + 0x8)) != 5)
+					*(float*)(ps2(entity->address + 0x158)) = 2000.f;
 			}
-			entity = (LinkedEntity*)(entity->NEXT + 0x20000000);
+			entity = (LinkedEntity*)(ps2(entity->NEXT));
 		} while (entity && i < 75);
 	});
 	s4.AddMenuEntry(&launchEntities);
@@ -347,15 +345,25 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (GetAsyncKeyState(VK_DOWN)) {
 			if (!registeredDOWN) {
 				registeredDOWN = true;
-				if (showCustomMenu)
+				if (showCustomMenu) {
 					m->highlightedIndex++;
+					if (m->highlightedIndex > 4) {
+						menuManager->setIndex(true);
+						m->highlightedIndex = 4;
+					}
+				}
 			}
 		} else registeredDOWN = false;
 		if (GetAsyncKeyState(VK_UP)) {
 			if (!registeredUP) {
 				registeredUP = true;
-				if (showCustomMenu)
+				if (showCustomMenu) {
 					m->highlightedIndex--;
+					if (m->highlightedIndex < 0) {
+						menuManager->setIndex(false);
+						m->highlightedIndex = 0;
+					}
+				}
 			}
 		} else registeredUP = false;
 		if (GetAsyncKeyState(VK_NEXT)) {
@@ -366,10 +374,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 				{
 					menuManager->Update();
 					showCustomMenu = !showCustomMenu;
-					*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
 					m->menuStatus = showCustomMenu ? 1 : 3;
 					m->isMenuOpen = showCustomMenu ? 1 : 0;
 					m->menuFade = showCustomMenu ? 0.f : 2.f;
+					*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
 					*gameStrings = showCustomMenu ? myStrings : originalStrings;
 				}
 			}
