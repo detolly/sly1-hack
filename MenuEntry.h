@@ -31,7 +31,7 @@ public:
 
 class SubMenu : public MenuEntry {
 public:
-	std::vector<MenuEntry*>* entries;
+	std::vector<MenuEntry*> entries;
 	SubMenu& father;
 
 	SubMenu(const char* name, SubMenu&);

@@ -23,20 +23,15 @@ void MenuEntry::execute(MenuManager* m)
 	printf("Not defined\r\n");
 }
 
-SubMenu::SubMenu(const char* name, SubMenu& father) : MenuEntry(name), father(father) {
-	entries = new std::vector<MenuEntry*>();
-}
+SubMenu::SubMenu(const char* name, SubMenu& father) : MenuEntry(name), father(father) {}
 
-SubMenu::~SubMenu()
-{
-	delete entries;
-}
+SubMenu::~SubMenu() {}
 
 DelegateEntry::DelegateEntry(const char* name, MenuCallback func) : MenuEntry(name), f(func) {}
 
 void SubMenu::AddMenuEntry(MenuEntry* entry) 
 {
-	entries->push_back(entry);
+	entries.push_back(entry);
 }
 
 void SubMenu::execute(MenuManager* m)

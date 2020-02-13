@@ -16,7 +16,7 @@ void MenuManager::Back() {
 }
 
 void MenuManager::setIndex(bool isBiggerIndex) {
-	if ((startNum == 0 && !isBiggerIndex) || (startNum == min(max(currentlyDisplaying->entries->size() - 5, 0), currentlyDisplaying->entries->size()) && isBiggerIndex))
+	if ((startNum == 0 && !isBiggerIndex) || (startNum == min(max(currentlyDisplaying->entries.size() - 5, 0), currentlyDisplaying->entries.size()) && isBiggerIndex))
 		return;
 	startNum = isBiggerIndex ? startNum + 1 : startNum - 1;
 	Update();
@@ -26,16 +26,16 @@ void MenuManager::setIndex(bool isBiggerIndex) {
 void MenuManager::Update() {
 	static char* realquitgame = (char*)0x2026A540;
 	n(hackStrings.headline, currentlyDisplaying->GetName(), 16);
-	for (int i = 0; i < min(currentlyDisplaying->entries->size(), 5); i++) {
+	for (int i = 0; i < min(currentlyDisplaying->entries.size(), 5); i++) {
 		if (i == 4)
-			n(realquitgame, currentlyDisplaying->entries->at(startNum + i)->GetName(), 16);
+			n(realquitgame, currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
 		char* place[] = { hackStrings.returnToGame, hackStrings.viewmap, hackStrings.options, hackStrings.exitToHideout, hackStrings.quitgame };
-		n(place[i], currentlyDisplaying->entries->at(startNum + i)->GetName(), 16);
+		n(place[i], currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
 	}
 }
 
 void MenuManager::executeAt(int index) {
-	currentlyDisplaying->entries->at(index + startNum)->execute(this);
+	currentlyDisplaying->entries.at(index + startNum)->execute(this);
 	Update();
 	*gameStrings = hackStrings;
 }
