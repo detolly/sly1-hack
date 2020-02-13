@@ -4,31 +4,36 @@
 #include "Strings.h"
 
 class MenuManager;
+class MenuEntry;
 
-typedef void(__cdecl* MenuCallback)(char*);
+typedef void(*MenuCallback)(MenuEntry& menu);
 class MenuEntry {
 public:
-	char name[16];
+	const char* name;
 
-	MenuEntry(const char*);
+	MenuEntry(const char* name);
+	virtual ~MenuEntry() {};
 	virtual void execute(MenuManager*);
-};
-
-class SubMenu : public MenuEntry {
-public:
-	SubMenu* father;
-	std::vector<MenuEntry*>* entries;
-
-	SubMenu(const char*, SubMenu*);
-	void AddMenuEntry(MenuEntry*);
-	void execute(MenuManager*) override;
+	void SetName(const char*);
+	const char* GetName();
 };
 
 class DelegateEntry : public MenuEntry {
 public:
 	MenuCallback f;
 
-	DelegateEntry(const char*, MenuCallback);
+	DelegateEntry(const char* name, MenuCallback);
+	void execute(MenuManager*) override;
+};
+
+class SubMenu : public MenuEntry {
+public:
+	std::vector<MenuEntry*>* entries;
+	SubMenu& father;
+
+	SubMenu(const char* name, SubMenu&);
+	~SubMenu();
+	void AddMenuEntry(MenuEntry*);
 	void execute(MenuManager*) override;
 };
 

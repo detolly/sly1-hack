@@ -5,14 +5,14 @@
 
 class MenuManager : public SubMenu {
 public:
-	Strings* hackStrings;
+	Strings& hackStrings;
 	Strings* gameStrings;
 	SubMenu* currentlyDisplaying;
 	int startNum = 0;
 
-	MenuManager(Strings*, Strings*);
+	MenuManager(const char*, Strings&, Strings*);
 
-	void SetCurrentlyDisplayingMenu(SubMenu*);
+	void SetCurrentlyDisplayingMenu(SubMenu&);
 	void Back();
 	void setIndex(bool);
 	void Update();

@@ -173,7 +173,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	Param = param;
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
-	menuManager = new MenuManager(&myStrings, gameStrings);
+	menuManager = new MenuManager("HookerBeer", myStrings, gameStrings);
+	SubMenu& mainMenu = *menuManager;
 	HMODULE b = GetModuleHandle("pcsx2.exe");
 	MODULEINFO c;
 	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
@@ -182,28 +183,28 @@ DWORD WINAPI MainThread(LPVOID param) {
 	printf("Found registers! (0x%x)\r\n", a);
 	r = (Regs*)a;
 
-	MenuEntry* placeholder = new MenuEntry("placeholder");
-	SubMenu* s = new SubMenu("General", menuManager);
-	MenuEntry* godmodee = new DelegateEntry((char*)"Godmode: Off", [](char* a) {
+	MenuEntry placeholder("-");
+	SubMenu s("General", mainMenu);
+	DelegateEntry godmodee("Godmode: Off", [](MenuEntry& entry) {
 		godmode = !godmode;
 		char c[16] = "Godmode: ";
 		strcat(c, godmode ? "On" : "Off");
-		n(a, c, 16);
+		entry.SetName(c);
 	});
-	MenuEntry* noclipp = new DelegateEntry((char*)"Noclip: Off", [](char* a) {
+	DelegateEntry noclipp("Noclip: Off", [](MenuEntry& entry) {
 		noclip = !noclip;
 		if (noclip) {
 			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
 			*(DWORD*)(slyEntity + 0x14) = 0;
 		}
-		else {
+		else if (!(*(DWORD*)(slyEntity + 0x14))) {
 			*(DWORD*)(slyEntity + 0x14) = storedSlyCollision;
 		}
 		char c[16] = "Noclip: ";
 		strcat(c, noclip ? "On" : "Off");
-		n(a, c, 16);
+		entry.SetName(c);
 	});
-	MenuEntry* patchhitbox = new DelegateEntry((char*)"Patch Hitbox", [](char* a) {
+	DelegateEntry patchhitbox("Patch Hitbox", [](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			DWORD p = *(DWORD*)(slyEntity + 0x14);
@@ -215,21 +216,21 @@ DWORD WINAPI MainThread(LPVOID param) {
 			printf("Don't have sly entity :(\r\n");
 		}
 	});
-	s->AddMenuEntry(godmodee);
-	s->AddMenuEntry(noclipp);
-	s->AddMenuEntry(patchhitbox);
-	s->AddMenuEntry(placeholder);
-	s->AddMenuEntry(placeholder);
-	s->AddMenuEntry(placeholder);
+	s.AddMenuEntry(&godmodee);
+	s.AddMenuEntry(&noclipp);
+	s.AddMenuEntry(&patchhitbox);
+	s.AddMenuEntry(&placeholder);
+	s.AddMenuEntry(&placeholder);
+	s.AddMenuEntry(&placeholder);
 
-	SubMenu* s2 = new SubMenu("Misc", menuManager);
-	MenuEntry* fish = new DelegateEntry((char*)"Fish timer: On", [](char* a) {
+	SubMenu s2("Misc", mainMenu);
+	DelegateEntry fish("Fish timer: On", [](MenuEntry& entry) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
 		strcat(c, unlimitedFish ? "Off" : "On");
-		n(a, c, 16);
+		entry.SetName(c);
 	});
-	MenuEntry* fuckedobjectss = new DelegateEntry((char*)"Textures: Off", [](char* a) {
+	DelegateEntry fuckedobjectss("Textures: Off", [](MenuEntry& a) {
 		fuckedobjects = !fuckedobjects;
 		if (fuckedobjects)
 		{
@@ -240,16 +241,16 @@ DWORD WINAPI MainThread(LPVOID param) {
 		}
 		char c[16] = "Textures: ";
 		strcat(c, fuckedobjects ? "On" : "Off");
-		n(a, c, 16);
+		a.SetName(c);
 	});
-	s2->AddMenuEntry(fish);
-	s2->AddMenuEntry(fuckedobjectss);
-	s2->AddMenuEntry(placeholder);
-	s2->AddMenuEntry(placeholder);
-	s2->AddMenuEntry(placeholder);
+	s2.AddMenuEntry(&fish);
+	s2.AddMenuEntry(&fuckedobjectss);
+	s2.AddMenuEntry(&placeholder);
+	s2.AddMenuEntry(&placeholder);
+	s2.AddMenuEntry(&placeholder);
 
-	SubMenu* s3 = new SubMenu("Location", menuManager);
-	MenuEntry* savelocation = new DelegateEntry((char*)"Save Location", [](char* a) {
+	SubMenu s3("Location", mainMenu);
+	DelegateEntry savelocation("Save Location", [](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
@@ -261,7 +262,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			storedLocation->z = slyPos->z;
 		}
 	});
-	MenuEntry* loadlocation = new DelegateEntry((char*)"Load Location", [](char* a) {
+	DelegateEntry loadlocation("Load Location", [](MenuEntry& entry) {
 		if (slyEntity && storedLocation)
 		{
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
@@ -271,14 +272,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 			*slyPos = *storedLocation;
 		}
 	});
-	s3->AddMenuEntry(savelocation);
-	s3->AddMenuEntry(loadlocation);
-	s3->AddMenuEntry(placeholder);
-	s3->AddMenuEntry(placeholder);
-	s3->AddMenuEntry(placeholder);
+	s3.AddMenuEntry(&savelocation);
+	s3.AddMenuEntry(&loadlocation);
+	s3.AddMenuEntry(&placeholder);
+	s3.AddMenuEntry(&placeholder);
+	s3.AddMenuEntry(&placeholder);
 
-	SubMenu* s4 = new SubMenu("Entities", menuManager);
-	MenuEntry* launchEntities = new DelegateEntry((char*)"Launch Up", [](char* a) {
+	SubMenu s4("Entities", mainMenu);
+	DelegateEntry launchEntities("Launch Up", [](MenuEntry& entry) {
 		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0;
 		int i = 0;
 		do {
@@ -291,19 +292,19 @@ DWORD WINAPI MainThread(LPVOID param) {
 			entity = (LinkedEntity*)(entity->NEXT + 0x20000000);
 		} while (entity && i < 75);
 	});
-	s4->AddMenuEntry(launchEntities);
-	s4->AddMenuEntry(placeholder);
-	s4->AddMenuEntry(placeholder);
-	s4->AddMenuEntry(placeholder);
-	s4->AddMenuEntry(placeholder);
+	s4.AddMenuEntry(&launchEntities);
+	s4.AddMenuEntry(&placeholder);
+	s4.AddMenuEntry(&placeholder);
+	s4.AddMenuEntry(&placeholder);
+	s4.AddMenuEntry(&placeholder);
 
-	menuManager->AddMenuEntry(s);
-	menuManager->AddMenuEntry(s2);
-	menuManager->AddMenuEntry(s3);
-	menuManager->AddMenuEntry(s4);
+	mainMenu.AddMenuEntry(&s);
+	mainMenu.AddMenuEntry(&s2);
+	mainMenu.AddMenuEntry(&s3);
+	mainMenu.AddMenuEntry(&s4);
 
-	menuManager->AddMenuEntry(placeholder);
-	menuManager->AddMenuEntry(placeholder);
+	mainMenu.AddMenuEntry(&placeholder);
+	mainMenu.AddMenuEntry(&placeholder);
 
 	//  addresses are not hard coded so to speak, they're just references to the actual MIPS game code,
 	//  and not the translated x86 msvc that you see in cheat engine f. ex.
@@ -317,17 +318,17 @@ DWORD WINAPI MainThread(LPVOID param) {
 	*/
 
 	//int pressedMenuHandle	= hookManager.AddHook((void*)0x20195964, &selectInMenu,		&oSelectInMenu);
-	hookManager = new HookManager();
-	int renderMenuHandle	= hookManager->AddHook((void*)0x20194FDC, &renderMenuHook,	&oRenderMenu);
-	int charmHookHandle		= hookManager->AddHook((void*)0x20192C8C, &charmDamageHook,	&oCharmDamage);
-	int coinHookHandle		= hookManager->AddHook((void*)0x201481C4, &hookPickUpCoin,	&oPickUpCoin);
-	int slyHitHandle		= hookManager->AddHook((void*)0x2013BF30, &hookedSlyHit,	&oSlyHit); 
-	int slyPositionHandle	= hookManager->AddHook((void*)0x2012551C, &hkSlyPosition,	&oAccessSlyPosition);
-	int setVelocityHandle	= hookManager->AddHook((void*)0x20125510, &hkSetVelocity,	&oSetVelocity);
-	int fishHandle			= hookManager->AddHook((void*)0x201ABB58, &fishHook,		&oFishTimer);
+	HookManager hookManager;
 
-	
-	hookManager->HookAll(param);
+	int renderMenuHandle	= hookManager.AddHook((void*)0x20194FDC, &renderMenuHook,	&oRenderMenu);
+	int charmHookHandle		= hookManager.AddHook((void*)0x20192C8C, &charmDamageHook,	&oCharmDamage);
+	int coinHookHandle		= hookManager.AddHook((void*)0x201481C4, &hookPickUpCoin,	&oPickUpCoin);
+	int slyHitHandle		= hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit,		&oSlyHit); 
+	int slyPositionHandle	= hookManager.AddHook((void*)0x2012551C, &hkSlyPosition,	&oAccessSlyPosition);
+	int setVelocityHandle	= hookManager.AddHook((void*)0x20125510, &hkSetVelocity,	&oSetVelocity);
+	int fishHandle			= hookManager.AddHook((void*)0x201ABB58, &fishHook,			&oFishTimer);
+
+	hookManager.HookAll(param);
 
 	bool registeredDOWN		= false;
 	bool registeredUP		= false;
@@ -396,6 +397,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 }
 
 void exit_app() {
+	delete menuManager;
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
 }
