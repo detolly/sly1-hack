@@ -19,7 +19,7 @@
 
 // 001749A4: jumped to if ledgegrabbing
 // 0018FCF0: stores the opacity of stuff - this one will be fun
-// 147ab0 - is called when you pick up a coin / maybe when entities are interacted with
+// 00147ab0 - is called when you pick up a coin / maybe when entities are interacted with
 
 #pragma region declarations
 bool showCustomMenu = false;
@@ -36,7 +36,6 @@ DWORD slyEntity;
 DWORD storedSlyCollision;
 Rotation* slyRotation;
 Vector3* storedLocation;
-void exit_app();
 #pragma endregion declarations
 
 #pragma region hooks
@@ -151,7 +150,7 @@ GameObject* objects = (GameObject*)0x20D8E794;
 
 DWORD WINAPI MainThread(LPVOID param) {
 	AllocConsole();
-	FILE* fp;
+	_iobuf* fp;
 	freopen_s(&fp, "CONOUT$", "w", stdout);
 	freopen_s(&fp, "CONIN$", "w", stdin);
 
@@ -392,10 +391,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 		Sleep(1);
 	}
 
-	exit_app();
-}
-
-void exit_app() {
 	delete menuManager;
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
