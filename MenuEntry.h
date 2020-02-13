@@ -8,9 +8,10 @@ class MenuEntry;
 
 typedef void(*MenuCallback)(MenuEntry& menu);
 class MenuEntry {
-public:
+private:
 	const char* name;
 
+public:
 	MenuEntry(const char* name);
 	virtual ~MenuEntry() {
 		delete name;

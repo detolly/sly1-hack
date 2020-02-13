@@ -32,12 +32,19 @@ Strings* gameStrings;
 Strings originalStrings;
 Strings myStrings;
 
+hsv h;
+rgba oldrgb;
+DWORD rgbaddress;
+
 LPVOID Param;
 
 DWORD slyEntity;
 DWORD storedSlyCollision;
 Rotation* slyRotation;
 Vector3* storedLocation;
+
+bool fuckedobjects = false;
+GameObject* objects = (GameObject*)0x20D8E794;
 #pragma endregion declarations
 
 #pragma region hooks
@@ -83,10 +90,6 @@ void selectInMenu() {
 	oSelectInMenu();
 }
 
-hsv h;
-rgba oldrgb;
-DWORD rgbaddress;
-
 bool rainbowMenu = false;
 stdHook oRenderMenu;
 void renderMenuHook() {
@@ -131,10 +134,6 @@ void hkSetVelocity() {
 	}
 	oSetVelocity();
 }
-
-bool fuckedobjects = false;
-GameObject* objects = (GameObject*)0x20D8E794;
-
 #pragma endregion hooks
 
 
