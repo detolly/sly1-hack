@@ -41,7 +41,6 @@ void exit_app();
 
 #pragma region hooks
 
-HookManager* hookManager;
 stdHook oPickUpCoin;
 void hookPickUpCoin() {
 	r->v0.UW[0] = 69;
@@ -176,7 +175,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	menuManager = new MenuManager("HookerBeer", myStrings, gameStrings);
 	SubMenu& mainMenu = *menuManager;
 	HMODULE b = GetModuleHandle("pcsx2.exe");
-	MODULEINFO c;
+	MODULEINFO c; 
 	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
 	DWORD a = 0x0;
 	SignatureScanner::FindSignature(&a, (DWORD)c.lpBaseOfDll, c.SizeOfImage, "\x00\x80\xFF\xFF\x00\x80\x07\x00\x00\xC0\x07\x00\x00\x00\x00\x00", "xxxxxxxxxxxxxxxx", -1072);
@@ -185,13 +184,13 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	MenuEntry placeholder("-");
 	SubMenu s("General", mainMenu);
-	DelegateEntry godmodee("Godmode: Off", [](MenuEntry& entry) {
+	DelegateEntry godmodee("Godmode: Off",			[](MenuEntry& entry) {
 		godmode = !godmode;
 		char c[16] = "Godmode: ";
 		strcat(c, godmode ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry noclipp("Noclip: Off", [](MenuEntry& entry) {
+	DelegateEntry noclipp("Noclip: Off",			[](MenuEntry& entry) {
 		noclip = !noclip;
 		if (noclip) {
 			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
@@ -204,7 +203,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, noclip ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry patchhitbox("Patch Hitbox", [](MenuEntry& entry) {
+	DelegateEntry patchhitbox("Patch Hitbox",		[](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			DWORD p = *(DWORD*)(slyEntity + 0x14);
@@ -224,13 +223,13 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s.AddMenuEntry(&placeholder);
 
 	SubMenu s2("Misc", mainMenu);
-	DelegateEntry fish("Fish timer: On", [](MenuEntry& entry) {
+	DelegateEntry fish("Fish timer: On",			[](MenuEntry& entry) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
 		strcat(c, unlimitedFish ? "Off" : "On");
 		entry.SetName(c);
 	});
-	DelegateEntry fuckedobjectss("Textures: Off", [](MenuEntry& a) {
+	DelegateEntry fuckedobjectss("Textures: Off",	[](MenuEntry& a) {
 		fuckedobjects = !fuckedobjects;
 		if (fuckedobjects)
 		{
@@ -250,7 +249,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s2.AddMenuEntry(&placeholder);
 
 	SubMenu s3("Location", mainMenu);
-	DelegateEntry savelocation("Save Location", [](MenuEntry& entry) {
+	DelegateEntry savelocation("Save Location",		[](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
@@ -262,7 +261,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			storedLocation->z = slyPos->z;
 		}
 	});
-	DelegateEntry loadlocation("Load Location", [](MenuEntry& entry) {
+	DelegateEntry loadlocation("Load Location",		[](MenuEntry& entry) {
 		if (slyEntity && storedLocation)
 		{
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
@@ -279,7 +278,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s3.AddMenuEntry(&placeholder);
 
 	SubMenu s4("Entities", mainMenu);
-	DelegateEntry launchEntities("Launch Up", [](MenuEntry& entry) {
+	DelegateEntry launchEntities("Launch Up",		[](MenuEntry& entry) {
 		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0;
 		int i = 0;
 		do {

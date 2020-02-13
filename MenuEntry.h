@@ -12,7 +12,9 @@ public:
 	const char* name;
 
 	MenuEntry(const char* name);
-	virtual ~MenuEntry() {};
+	virtual ~MenuEntry() {
+		delete name;
+	};
 	virtual void execute(MenuManager*);
 	void SetName(const char*);
 	const char* GetName();
