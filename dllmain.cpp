@@ -27,7 +27,6 @@
 bool showCustomMenu = false;
 Menu* m = (Menu*)0x2026FF68;
 
-MenuManager* menuManager;
 Strings* gameStrings;
 Strings originalStrings;
 Strings myStrings;
@@ -160,8 +159,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	Param = param;
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
-	menuManager = new MenuManager("HookerBeer", myStrings, gameStrings);
-	SubMenu& mainMenu = *menuManager;
+	MenuManager menuManager("HookerBeer", myStrings, gameStrings);
 	HMODULE b = GetModuleHandle("pcsx2.exe");
 	MODULEINFO c; 
 	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
@@ -170,15 +168,15 @@ DWORD WINAPI MainThread(LPVOID param) {
 	printf("Found registers! (0x%x)\r\n", a);
 	r = (Regs*)a;
 
-	MenuEntry placeholder("-");
-	SubMenu s("General", mainMenu);
-	DelegateEntry godmodee("Godmode: Off",			[](MenuEntry& entry) {
+	MenuEntry placeholder("-", menuManager);
+	SubMenu s("General", menuManager, menuManager);
+	DelegateEntry godmodee(			"Godmode: Off",		menuManager,	[](MenuEntry& entry) {
 		godmode = !godmode;
 		char c[16] = "Godmode: ";
 		strcat(c, godmode ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry noclipp("Noclip: Off",			[](MenuEntry& entry) {
+	DelegateEntry noclipp(			"Noclip: Off",		menuManager,	[](MenuEntry& entry) {
 		noclip = !noclip;
 		if (noclip) {
 			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
@@ -191,7 +189,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, noclip ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry patchhitbox("Patch Hitbox",		[](MenuEntry& entry) {
+	DelegateEntry patchhitbox(		"Patch Hitbox",		menuManager,	[](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			DWORD p = *(DWORD*)(slyEntity + 0x14);
@@ -210,14 +208,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s.AddMenuEntry(&placeholder);
 	s.AddMenuEntry(&placeholder);
 
-	SubMenu s2("Misc", mainMenu);
-	DelegateEntry fish("Fish timer: On",			[](MenuEntry& entry) {
+	SubMenu s2("Misc", menuManager, menuManager);
+	DelegateEntry fish(				"Fish timer: On",	menuManager,	[](MenuEntry& entry) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
 		strcat(c, unlimitedFish ? "Off" : "On");
 		entry.SetName(c);
 	});
-	DelegateEntry fuckedobjectss("Textures: Off",	[](MenuEntry& entry) {
+	DelegateEntry fuckedobjectss(	"Textures: Off",	menuManager,	[](MenuEntry& entry) {
 		fuckedobjects = !fuckedobjects;
 		if (fuckedobjects)
 		{
@@ -230,7 +228,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat(c, fuckedobjects ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry rainbowmenuu("Rainbow: Off",		[](MenuEntry& entry) {
+	DelegateEntry rainbowmenuu(		"Rainbow: Off",		menuManager,	[](MenuEntry& entry) {
 		rainbowMenu = !rainbowMenu;
 		if (!rainbowMenu)
 			*(rgba*)rgbaddress = oldrgb;
@@ -244,8 +242,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s2.AddMenuEntry(&placeholder);
 	s2.AddMenuEntry(&placeholder);
 
-	SubMenu s3("Location", mainMenu);
-	DelegateEntry savelocation("Save Location",		[](MenuEntry& entry) {
+	SubMenu s3("Location", menuManager, menuManager);
+	DelegateEntry savelocation(		"Save Location",	menuManager,	[](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
@@ -257,7 +255,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			storedLocation->z = slyPos->z;
 		}
 	});
-	DelegateEntry loadlocation("Load Location",		[](MenuEntry& entry) {
+	DelegateEntry loadlocation(		"Load Location",	menuManager,	[](MenuEntry& entry) {
 		if (slyEntity && storedLocation)
 		{
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
@@ -273,8 +271,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s3.AddMenuEntry(&placeholder);
 	s3.AddMenuEntry(&placeholder);
 
-	SubMenu s4("Entities", mainMenu);
-	DelegateEntry launchEntities("Launch Up",		[](MenuEntry& entry) {
+	SubMenu s4("Entities", menuManager, menuManager);
+	DelegateEntry launchEntities(	"Launch Up",		menuManager,	[](MenuEntry& entry) {
 		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0;
 		int i = 0;
 		do {
@@ -293,13 +291,13 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s4.AddMenuEntry(&placeholder);
 	s4.AddMenuEntry(&placeholder);
 
-	mainMenu.AddMenuEntry(&s);
-	mainMenu.AddMenuEntry(&s2);
-	mainMenu.AddMenuEntry(&s3);
-	mainMenu.AddMenuEntry(&s4);
+	menuManager.AddMenuEntry(&s);
+	menuManager.AddMenuEntry(&s2);
+	menuManager.AddMenuEntry(&s3);
+	menuManager.AddMenuEntry(&s4);
 
-	mainMenu.AddMenuEntry(&placeholder);
-	mainMenu.AddMenuEntry(&placeholder);
+	menuManager.AddMenuEntry(&placeholder);
+	menuManager.AddMenuEntry(&placeholder);
 
 	//  addresses are not hard coded so to speak, they're just references to the actual MIPS game code,
 	//  and not the translated x86 msvc that you see in cheat engine f. ex.
@@ -347,7 +345,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				if (showCustomMenu) {
 					m->highlightedIndex++;
 					if (m->highlightedIndex > 4) {
-						menuManager->setIndex(true);
+						menuManager.setIndex(true);
 						m->highlightedIndex = 4;
 					}
 				}
@@ -359,7 +357,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				if (showCustomMenu) {
 					m->highlightedIndex--;
 					if (m->highlightedIndex < 0) {
-						menuManager->setIndex(false);
+						menuManager.setIndex(false);
 						m->highlightedIndex = 0;
 					}
 				}
@@ -371,7 +369,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				registeredPGDN = true;
 				if (!m->isMenuOpen || showCustomMenu)
 				{
-					menuManager->Update();
+					menuManager.Update();
 					showCustomMenu = !showCustomMenu;
 					m->menuStatus = showCustomMenu ? 1 : 3;
 					m->isMenuOpen = showCustomMenu ? 1 : 0;
@@ -384,7 +382,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (GetAsyncKeyState(VK_LEFT)) {
 			if (!registeredLEFT) {
 				if (showCustomMenu)
-					menuManager->Back();
+					menuManager.Back();
 				registeredLEFT = true;
 			}
 		} else registeredLEFT = false;
@@ -392,13 +390,12 @@ DWORD WINAPI MainThread(LPVOID param) {
 			if (!registeredENTER) {
 				registeredENTER = true;
 				if (showCustomMenu)
-					menuManager->executeAt(m->highlightedIndex);
+					menuManager.executeAt(m->highlightedIndex);
 			}
 		} else registeredENTER = false;
 		Sleep(1);
 	}
 
-	delete menuManager;
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
 }

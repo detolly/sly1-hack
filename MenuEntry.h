@@ -8,15 +8,16 @@ class MenuEntry;
 
 typedef void(*MenuCallback)(MenuEntry& menu);
 class MenuEntry {
-private:
-	const char* name;
+protected:
+	char name[16];
+	MenuManager& manager;
 
 public:
-	MenuEntry(const char* name);
+	MenuEntry(const char*, MenuManager&);
 	virtual ~MenuEntry() {
 		delete name;
 	};
-	virtual void execute(MenuManager*);
+	virtual void execute();
 	void SetName(const char*);
 	const char* GetName();
 };
@@ -25,8 +26,8 @@ class DelegateEntry : public MenuEntry {
 public:
 	MenuCallback f;
 
-	DelegateEntry(const char* name, MenuCallback);
-	void execute(MenuManager*) override;
+	DelegateEntry(const char* name, MenuManager&, MenuCallback);
+	void execute() override;
 };
 
 class SubMenu : public MenuEntry {
@@ -34,9 +35,9 @@ public:
 	std::vector<MenuEntry*> entries;
 	SubMenu& father;
 
-	SubMenu(const char* name, SubMenu&);
+	SubMenu(const char* name, MenuManager&, SubMenu&);
 	~SubMenu();
 	void AddMenuEntry(MenuEntry*);
-	void execute(MenuManager*) override;
+	void execute() override;
 };
 

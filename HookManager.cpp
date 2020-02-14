@@ -87,11 +87,14 @@ void HookMember::Hook() {
 	VirtualProtect(baseAddress, 4, old, &old);
 }
 
-HookMember::HookMember(void* baseAddress, void* functionPointer, stdHook* ret, char handle) : baseAddress(baseAddress), handle(handle), functionPointer(functionPointer), retAddress(ret), hookString(nullptr)
+HookMember::HookMember(void* baseAddress, void* functionPointer, stdHook* ret, char handle) :
+	baseAddress(baseAddress),
+	handle(handle),
+	functionPointer(functionPointer),
+	retAddress(ret),
+	hookString()
 {
-	hookString = new char[14] { (char)0x8B, (char)0x0D, (char)0xC0, (char)0x9B, (char)0x8D, (char)0x0, (char)0x81, (char)0xC1, (char)handle, (char)0x13, (char)0x0, (char)0x0, (char)0x89, (char)0xC8 };
-}
-
-HookMember::~HookMember() {
-	delete[] hookString;
-}
+	char a[] = { (char)0x8B, (char)0x0D, (char)0xC0, (char)0x9B, (char)0x8D, (char)0x0, (char)0x81, (char)0xC1, (char)handle, (char)0x13, (char)0x0, (char)0x0, (char)0x89, (char)0xC8 };
+	for (int i = 0; i < 14; i++)
+		hookString[i] = a[i];
+};

@@ -2,7 +2,7 @@
 #include "pch.h"
 #include "MenuManager.h"
 
-MenuManager::MenuManager(const char* name, Strings& hackStrings, Strings* gameStrings) : SubMenu(name, *this), currentlyDisplaying(this), hackStrings(hackStrings), gameStrings(gameStrings) {};
+MenuManager::MenuManager(const char* name, Strings& hackStrings, Strings* gameStrings) : SubMenu(name, *this, *this), currentlyDisplaying(this), hackStrings(hackStrings), gameStrings(gameStrings) {};
 
 void MenuManager::SetCurrentlyDisplayingMenu(SubMenu& menu) {
 	currentlyDisplaying = &menu;
@@ -35,7 +35,7 @@ void MenuManager::Update() {
 }
 
 void MenuManager::executeAt(int index) {
-	currentlyDisplaying->entries.at(index + startNum)->execute(this);
+	currentlyDisplaying->entries.at(index + startNum)->execute();
 	Update();
 	*gameStrings = hackStrings;
 }
