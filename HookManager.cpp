@@ -49,7 +49,6 @@ DWORD WINAPI HookThread(LPVOID param) {
 			*(DWORD*)(hookLocation + 1) = ((DWORD)hmanager->Get(i)->functionPointer - hookLocation - 5);
 			VirtualProtect((void*)hookLocation, length, old, &old);
 			delete hmanager->Get(i);
-
 		}
 		if (completed.size() == hmanager->hooks.size())
 			break;
