@@ -24,16 +24,16 @@ then you wait on the ready screen
 * while the game is loading in, inject (aka press enter one more time on the injector)
 * **this has to be done before paris loads in**
 
-now that you are ready, here's how the menu works:
+Now that you are ready, here's how the menu works:
 
-Page Down: Opens/Closes the menu
-Up/Down arrows: navigate the menu / go up or down, respectively, in noclip (requires the menu to be closed)
-Left arrow: go back in the menu
+Page Down: Opens/Closes the menu  
+Up/Down arrows: navigate the menu / go up or down, respectively, in noclip (requires the menu to be closed)  
+Left arrow: go back in the menu  
 
 Tips for noclip: jump before you enable it. this way you will be able to control your velocity with your joystick.
 
-_The hooks work this way_:
- the first time that an event happens in the game that is tied to the hooks, it will replace the code with the custom code
+_The hooks work this way_:  
+The first time that an event happens in the game that is tied to the hooks, it will replace the code with the custom code
 this usually means that the first time you do the event, the custom code won't actually execute.
 
 Godmode also only works for specific guards atm, because the animations are different for some enemies.
