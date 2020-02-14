@@ -3,18 +3,12 @@
 #include "sigscan.h"
 #include "vector"
 
-HookManager::HookManager() : count(0) {
-	hooks = new map<char, HookMember*>();
-}
-
-HookManager::~HookManager() {
-	delete hooks;
-}
+HookManager::HookManager() : count(0) {}
 
 int HookManager::AddHook(void* baseAddr, void* functionAddr, stdHook* retAddr) {
 	char id = this->count++;
 	HookMember* member = new HookMember(baseAddr, functionAddr, retAddr, id);
-	this->hooks->insert(std::make_pair(id, member));
+	hooks.insert(std::make_pair(id, member));
 	return id;
 }
 
@@ -38,7 +32,7 @@ DWORD WINAPI HookThread(LPVOID param) {
 	DWORD hookLocation = 0x0;
 	std::vector<int> completed;
 	while (true) {
-		for (int i = 0; i < hmanager->hooks->size(); i++) {
+		for (int i = 0; i < hmanager->hooks.size(); i++) {
 			if (find(i, &completed))
 				continue;
 			if (!SignatureScanner::FindSignature(&hookLocation, 0x30000000, 0x01000000, hmanager->Get(i)->hookString, hookMask, 0)) {
@@ -47,7 +41,7 @@ DWORD WINAPI HookThread(LPVOID param) {
 			printf("found hook for %d\r\n", i);
 
 			completed.push_back(i);
-			*(hmanager->hooks->at(i)->retAddress) = (stdHook)(hookLocation + 6);
+			*(hmanager->hooks.at(i)->retAddress) = (stdHook)(hookLocation + 6);
 
 			VirtualProtect((void*)hookLocation, length, PAGE_EXECUTE_READWRITE, &old);
 			memset((void*)hookLocation, 0x90, length);
@@ -57,7 +51,7 @@ DWORD WINAPI HookThread(LPVOID param) {
 			delete hmanager->Get(i);
 
 		}
-		if (completed.size() == hmanager->hooks->size())
+		if (completed.size() == hmanager->hooks.size())
 			break;
 		Sleep(200);
 	}
@@ -67,8 +61,8 @@ DWORD WINAPI HookThread(LPVOID param) {
 
 void HookManager::HookAll(LPVOID param) {
 	hmanager = this;
-	printf("hooks size: %d\r\n", hooks->size());
-	for (int i = 0; i < hooks->size(); i++) {
+	printf("hooks size: %d\r\n", hooks.size());
+	for (int i = 0; i < hooks.size(); i++) {
 		Get(i)->Hook();
 	}
 	CreateThread(0, 0, HookThread, param, 0, 0);
@@ -76,7 +70,7 @@ void HookManager::HookAll(LPVOID param) {
 
 
 HookMember* HookManager::Get(char id) {
-	return hooks->at(id);
+	return hooks.at(id);
 }
 
 void HookMember::Hook() {

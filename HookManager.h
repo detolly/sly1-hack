@@ -21,11 +21,10 @@ public:
 class HookManager {
 private:
 public:
-	map<char, HookMember*>* hooks;
+	map<char, HookMember*> hooks;
 	char count;
 	int AddHook(void*, void*, stdHook*);
 	HookMember* Get(char);
 	void HookAll(LPVOID asd);
 	HookManager();
-	~HookManager();
 };
