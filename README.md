@@ -10,7 +10,7 @@ welcome to my sly 1 hack
 !["fuck you"](zerk.PNG)
 
 ## Contributions
-I would love contributions on this project. If you have any ideas, join the [Sly Modding Discord](https://discord.gg/J7d7UAy), or [United Effort](https://discord.gg/HtREYrf)
+I would love contributions on this project. If you have any ideas, join the [Sly Modding Discord](https://discord.gg/J7d7UAy), or [United Effort](https://discord.gg/HtREYrf). If I'm not happy with your code I will still gladly take it and ffix it
 
 ## How to use this dll
 
