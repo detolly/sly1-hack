@@ -8,7 +8,7 @@ public:
 	Strings& hackStrings;
 	Strings* gameStrings;
 	SubMenu* currentlyDisplaying;
-	int startNum = 0;
+	int startNum;
 
 	MenuManager(const char*, Strings&, Strings*);
 

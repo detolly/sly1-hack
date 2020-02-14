@@ -23,6 +23,7 @@ void MenuEntry::execute()
 SubMenu::SubMenu(const char* name, MenuManager& manager, SubMenu& parent) : MenuEntry(name, manager), father(parent) {}
 
 SubMenu::~SubMenu() {}
+MenuEntry::~MenuEntry() {}
 
 DelegateEntry::DelegateEntry(const char* name, MenuManager& manager, MenuCallback func) : MenuEntry(name, manager), f(func) {}
 
@@ -33,7 +34,6 @@ void SubMenu::AddMenuEntry(MenuEntry* entry)
 
 void SubMenu::execute()
 {
-	manager.startNum = 0;
 	manager.SetCurrentlyDisplayingMenu(*this);
 }
 

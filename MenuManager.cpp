@@ -2,9 +2,11 @@
 #include "pch.h"
 #include "MenuManager.h"
 
-MenuManager::MenuManager(const char* name, Strings& hackStrings, Strings* gameStrings) : SubMenu(name, *this, *this), currentlyDisplaying(this), hackStrings(hackStrings), gameStrings(gameStrings) {};
+MenuManager::MenuManager(const char* name, Strings& hackStrings, Strings* gameStrings) : SubMenu(name, *this, *this), startNum(0), currentlyDisplaying(this), hackStrings(hackStrings), gameStrings(gameStrings) {};
 
 void MenuManager::SetCurrentlyDisplayingMenu(SubMenu& menu) {
+
+	startNum = 0;
 	currentlyDisplaying = &menu;
 	Update();
 	*gameStrings = hackStrings;
@@ -27,9 +29,9 @@ void MenuManager::Update() {
 	static char* realquitgame = (char*)0x2026A540;
 	n(hackStrings.headline, currentlyDisplaying->GetName(), 16);
 	for (int i = 0; i < min(currentlyDisplaying->entries.size(), 5); i++) {
+		static char* place[] = { hackStrings.returnToGame, hackStrings.viewmap, hackStrings.options, hackStrings.exitToHideout, hackStrings.quitgame };
 		if (i == 4)
 			n(realquitgame, currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
-		char* place[] = { hackStrings.returnToGame, hackStrings.viewmap, hackStrings.options, hackStrings.exitToHideout, hackStrings.quitgame };
 		n(place[i], currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
 	}
 }
