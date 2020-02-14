@@ -14,9 +14,7 @@ protected:
 
 public:
 	MenuEntry(const char*, MenuManager&);
-	virtual ~MenuEntry() {
-		delete name;
-	};
+	virtual ~MenuEntry();
 	virtual void execute();
 	void SetName(const char*);
 	const char* GetName();
