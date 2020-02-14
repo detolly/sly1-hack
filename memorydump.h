@@ -5,17 +5,17 @@
 class MemoryDump {
 public:
 	static void Dump(const char* fileName, DWORD start, size_t size) {
-		char* bytes = (char*)malloc(size);
+		char* bytes = new char[size];
 		if (!bytes) {
-			printf("malloc failed, not enough (legal) memory?");
+			printf("failed, not enough memory?\r\n");
 			return; 
 		}
-		for (DWORD i = 0; i < size; ++i) {
+		for (unsigned int i = 0; i < size; ++i) {
 			bytes[i] = *(char*)(start+i);
 		}
-		std::ofstream file("C:\\test\\dump.bin", std::ios::out | std::ios::binary);
+		std::ofstream file(fileName, std::ios::out | std::ios::binary);
 		file.write(bytes, size);
-		free(bytes);
-		printf("Successfully dumped memory!\r\n");
+		file.close();
+		delete[] bytes;
 	}
 };

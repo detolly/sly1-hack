@@ -159,7 +159,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	Param = param;
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
-	MenuManager menuManager("HookerBeer", myStrings, gameStrings);
+	MenuManager menuManager(":weed:", myStrings, gameStrings);
 	HMODULE b = GetModuleHandle("pcsx2.exe");
 	MODULEINFO c; 
 	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
@@ -328,6 +328,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	bool registeredPGDN		= false;
 	bool registeredENTER	= false;
 	bool registeredLEFT		= false;
+	bool registeredEND		= false;
 
 	unsigned long long frames = 0;
 
@@ -365,7 +366,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 		} else registeredUP = false;
 		if (GetAsyncKeyState(VK_NEXT)) {
 			if (!registeredPGDN) {
-				//MemoryDump::Dump("C:\\test\\dump.bin", 0x30000000, positionHookLocation-0x30000000);
 				registeredPGDN = true;
 				if (!m->isMenuOpen || showCustomMenu)
 				{
@@ -393,6 +393,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 					menuManager.executeAt(m->highlightedIndex);
 			}
 		} else registeredENTER = false;
+		if (GetAsyncKeyState(VK_END)) {
+			if (!registeredEND) {
+				registeredEND = true;
+				printf("dumping memory\r\n");
+				MemoryDump::Dump("C:\\Users\\Thomas\\Desktop\\dump.bin", 0x20000000, 0x0FFFFFFF);
+				printf("memory dumped\r\n");
+			}
+		} else registeredEND = false;
 		Sleep(1);
 	}
 
