@@ -54,9 +54,15 @@ void hookPickUpCoin() {
 	oPickUpCoin();
 }
 
+bool charms;
 stdHook oCharmDamage;
 void charmDamageHook() {
-	r->v0.UW[0] = 2;
+	if (charms) {
+		r->v0.UW[0] = 2;
+	}
+	else {
+		r->v0.UW[0] -= 1;
+	}
 	oCharmDamage();
 }
 
@@ -108,6 +114,7 @@ void hookedChangeOpacity() {
 }
 
 bool noclip = false;
+bool flymode = false;
 
 stdHook oAccessSlyPosition;
 void hkSlyPosition() {
@@ -120,8 +127,8 @@ void hkSlyPosition() {
 stdHook oSetVelocity;
 void hkSetVelocity() {
 	r->v0.UW[0] += 0x1858;
-	if (noclip) {
-		if (*(int*)(ps2(r->s0.UW[0] + 0x8)) == 5) {
+	if (*(int*)(ps2(r->s0.UW[0] + 0x8)) == 5) {
+		if (noclip || flymode) {
 			*(float*)(ps2(r->s0.UW[0] + 0x158)) = 20.f;
 			if (!showCustomMenu) {
 				if (GetAsyncKeyState(VK_UP))
@@ -176,6 +183,12 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, godmode ? "On" : "Off");
 		entry.SetName(c);
 	});
+	DelegateEntry charmss("Charms: Off", menuManager, [](MenuEntry& entry) {
+		charms = !charms;
+		char c[16] = "Charms: ";
+		strcat_s(c, charms ? "On" : "Off");
+		entry.SetName(c);
+		});
 	DelegateEntry noclipp(			"Noclip: Off",		menuManager,	[](MenuEntry& entry) {
 		noclip = !noclip;
 		if (noclip) {
@@ -189,6 +202,12 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, noclip ? "On" : "Off");
 		entry.SetName(c);
 	});
+	DelegateEntry flymodee(			"Fly Mode: Off", menuManager, [](MenuEntry& entry) {
+		flymode = !flymode;
+		char c[16] = "Fly Mode: ";
+		strcat_s(c, flymode ? "On" : "Off");
+		entry.SetName(c);
+		});
 	DelegateEntry patchhitbox(		"Patch Hitbox",		menuManager,	[](MenuEntry& entry) {
 		if (slyEntity)
 		{
@@ -202,10 +221,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 		}
 	});
 	s.AddMenuEntry(&godmodee);
+	s.AddMenuEntry(&charmss);
 	s.AddMenuEntry(&noclipp);
+	s.AddMenuEntry(&flymodee);
 	s.AddMenuEntry(&patchhitbox);
-	s.AddMenuEntry(&placeholder);
-	s.AddMenuEntry(&placeholder);
 	s.AddMenuEntry(&placeholder);
 
 	SubMenu s2("Misc", menuManager, menuManager);
@@ -393,7 +412,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 					menuManager.executeAt(m->highlightedIndex);
 			}
 		} else registeredENTER = false;
-		if (GetAsyncKeyState(VK_END)) {
+		/*if (GetAsyncKeyState(VK_END)) {
 			if (!registeredEND) {
 				registeredEND = true;
 				printf("dumping memory\r\n");
@@ -401,6 +420,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				printf("memory dumped\r\n");
 			}
 		} else registeredEND = false;
+		*/
 		Sleep(1);
 	}
 
