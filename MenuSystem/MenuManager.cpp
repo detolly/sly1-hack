@@ -33,6 +33,8 @@ void MenuManager::Update() {
 		static char* place[] = { hackStrings.returnToGame, hackStrings.viewmap, hackStrings.options, hackStrings.exitToHideout, hackStrings.quitgame };
 		if (i == 4)
 			memcpy(realquitgame, currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
+		if (i == 3)
+			memcpy(hackStrings.exitLevel, currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
 		memcpy(place[i], currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
 	}
 }

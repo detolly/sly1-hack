@@ -189,7 +189,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		entry.SetName(c);
 	});
 	DelegateEntry charmss("Charms: Off", menuManager, [](MenuEntry& entry) {
-		charms = !charms;
+		charms = !charms;	
 		char c[16] = "Charms: ";
 		strcat_s(c, charms ? "On" : "Off");
 		entry.SetName(c);
@@ -282,11 +282,13 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DelegateEntry loadlocation(		"Load Location",	menuManager,	[](MenuEntry& entry) {
 		if (slyEntity && storedLocation)
 		{
-			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
-			*(float*)(slyEntity + 0x150) = 0.f;
-			*(float*)(slyEntity + 0x154) = 0.f;
-			*(float*)(slyEntity + 0x158) = 0.f;
-			*slyPos = *storedLocation;
+			for (int i = 0; i < 3; i++) {
+				Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
+				*(float*)(slyEntity + 0x150) = 0.f;
+				*(float*)(slyEntity + 0x154) = 0.f;
+				*(float*)(slyEntity + 0x158) = 0.f;
+				*slyPos = *storedLocation;
+			}
 		}
 	});
 	s3.AddMenuEntry(&savelocation);
