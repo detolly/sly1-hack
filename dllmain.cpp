@@ -1,19 +1,24 @@
 ﻿// dllmain.cpp : Defines the entry point for the DLL application.
-#include "pch.h"
-#include "sigscan.h"
-#include "HookManager.h"
-#include "vector3.h"
-#include "rotation.h"
-#include "memorydump.h"
-#include "Menu.h"
-#include "registers.h"
-#include "Strings.h"
-#include "rgb.h"
-#include "hooks.h"
-#include "MenuManager.h"
+
+#include "Utilities/sigscan.h"
+#include "Utilities/memorydump.h"
+
+#include "PCSX2structs/registers.h"
+
+#include "GameStructs/vector3.h"
+#include "GameStructs/rotation.h"
+#include "GameStructs/Menu.h"
+#include "GameStructs/Strings.h"
+#include "GameStructs/rgb.h"
+#include "GameStructs/Object.h"
+#include "GameStructs/EntityList.h"
+
+#include "MenuSystem/MenuManager.h"
+
+#include "Hooks/HookManager.h"
+
 #include "psapi.h"
-#include "Object.h"
-#include "EntityList.h"
+
 
 // this function has to do with animations: 00124fc0
 
@@ -292,7 +297,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 
 	SubMenu s4("Entities", menuManager, menuManager);
 	DelegateEntry launchEntities(	"Launch Up",		menuManager,	[](MenuEntry& entry) {
-		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0;
+		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0; //TODO: HARDCODED
 		int i = 0;
 		do {
 			i++;

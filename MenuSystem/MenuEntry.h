@@ -1,7 +1,6 @@
 #pragma once
-#include "pch.h"
-#include "vector"
-#include "Strings.h"
+
+#include <vector>
 
 class MenuManager;
 class MenuEntry;
@@ -9,12 +8,15 @@ class MenuEntry;
 typedef void(*MenuCallback)(MenuEntry& menu);
 class MenuEntry {
 protected:
-	char name[16];
+	static const int nameLen = 15;
+	char name[nameLen];
+
 	MenuManager& manager;
 
 public:
 	MenuEntry(const char*, MenuManager&);
 	virtual ~MenuEntry();
+
 	virtual void execute();
 	void SetName(const char*);
 	const char* GetName();

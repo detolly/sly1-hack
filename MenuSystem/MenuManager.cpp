@@ -1,5 +1,6 @@
 #pragma once
-#include "pch.h"
+#include "../framework.h"
+
 #include "MenuManager.h"
 
 MenuManager::MenuManager(const char* name, Strings& hackStrings, Strings* gameStrings) : SubMenu(name, *this, *this), startNum(0), currentlyDisplaying(this), hackStrings(hackStrings), gameStrings(gameStrings) {};

@@ -1,6 +1,7 @@
-#include "pch.h"
+
+#include "../Utilities/sigscan.h"
+
 #include "HookManager.h"
-#include "sigscan.h"
 #include "vector"
 
 HookManager::HookManager() : count(0) {}

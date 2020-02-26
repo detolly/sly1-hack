@@ -1,6 +1,6 @@
 #pragma once
-#include "pch.h"
-#include "Strings.h"
+
+#include "../GameStructs/Strings.h"
 #include "MenuEntry.h"
 
 class MenuManager : public SubMenu {

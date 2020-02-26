@@ -1,4 +1,5 @@
 #pragma once
+
 struct Menu {
 	int a;
 	int randomConstant;

@@ -1,14 +1,17 @@
-#include "pch.h"
+#pragma once
+
 #include "MenuEntry.h"
 #include "MenuManager.h"
 
-MenuEntry::MenuEntry(const char* _name, MenuManager& m) : name(""), manager(m) {
+#define max(a,b) a >= b ? a : b
+#define min(a,b) a <= b ? a : b
+
+MenuEntry::MenuEntry(const char* _name, MenuManager& m) : name(), manager(m) {
 	SetName(_name);
 }
 
 void MenuEntry::SetName(const char* newName) {
-	for (int a = 0; a < max(strlen(newName), strlen(name)); a++)
-		name[a] = newName[a];
+	memcpy(name, newName, min(nameLen, strlen(newName)+1));
 }
 
 const char* MenuEntry::GetName() {

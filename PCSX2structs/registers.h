@@ -1,7 +1,6 @@
 #pragma once
-#include "pch.h"
+
 #include "stdint.h"
-#include "sigscan.h"
 
 typedef char s8;
 typedef int16_t s16;
