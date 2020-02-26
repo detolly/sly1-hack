@@ -8,8 +8,8 @@ welcome to my sly 1 hack
 2. inject (into pcsx2)
 3. profit
 
-!["Image didn't work dude"](legal.PNG)
-!["fuck you"](zerk.PNG)
+!["Image didn't work dude"](Resources_git/legal.PNG)
+!["fuck you"](Resources_git/zerk.PNG)
 
 ## Contributions
 I would love contributions on this project. If you have any ideas, join the [Sly Modding Discord](https://discord.gg/J7d7UAy), or [United Effort](https://discord.gg/HtREYrf). If I'm not happy with your code I will still gladly take it and ffix it
