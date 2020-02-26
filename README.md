@@ -1,7 +1,5 @@
 # sly1-hack
 
-asd
-
 Link to [google drive](https://drive.google.com/drive/folders/1Gg1WDCnt2Dh_dDbE8kQjSR9vr8TLJsbl?usp=sharing): https://drive.google.com/drive/folders/1Gg1WDCnt2Dh_dDbE8kQjSR9vr8TLJsbl?usp=sharing
 
 welcome to my sly 1 hack
