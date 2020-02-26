@@ -30,10 +30,6 @@ struct Strings {
 	char speakersmono[16];
 };
 
-static void n(char* a, const char* b, size_t s) {
-	std::strncpy(a, b, s);
-}
-
 static Strings createHookStrings(Strings def) {
 	Strings s;
 	memcpy(&s, &def, sizeof(Strings));

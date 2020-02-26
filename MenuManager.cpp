@@ -27,12 +27,12 @@ void MenuManager::setIndex(bool isBiggerIndex) {
 
 void MenuManager::Update() {
 	static char* realquitgame = (char*)0x2026A540;
-	n(hackStrings.headline, currentlyDisplaying->GetName(), 16);
+	memcpy(hackStrings.headline, currentlyDisplaying->GetName(), 16);
 	for (int i = 0; i < min(currentlyDisplaying->entries.size(), 5); i++) {
 		static char* place[] = { hackStrings.returnToGame, hackStrings.viewmap, hackStrings.options, hackStrings.exitToHideout, hackStrings.quitgame };
 		if (i == 4)
-			n(realquitgame, currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
-		n(place[i], currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
+			memcpy(realquitgame, currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
+		memcpy(place[i], currentlyDisplaying->entries.at(startNum + i)->GetName(), 16);
 	}
 }
 

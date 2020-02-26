@@ -160,7 +160,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	Param = param;
 	memcpy(&originalStrings, gameStrings, sizeof(Strings));
 	MenuManager menuManager(":weed:", myStrings, gameStrings);
-	HMODULE b = GetModuleHandle("pcsx2.exe");
+	HMODULE b = GetModuleHandleA("pcsx2.exe");
 	MODULEINFO c; 
 	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
 	DWORD a = 0x0;
@@ -173,7 +173,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DelegateEntry godmodee(			"Godmode: Off",		menuManager,	[](MenuEntry& entry) {
 		godmode = !godmode;
 		char c[16] = "Godmode: ";
-		strcat(c, godmode ? "On" : "Off");
+		strcat_s(c, godmode ? "On" : "Off");
 		entry.SetName(c);
 	});
 	DelegateEntry noclipp(			"Noclip: Off",		menuManager,	[](MenuEntry& entry) {
@@ -186,7 +186,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			*(DWORD*)(slyEntity + 0x14) = storedSlyCollision;
 		}
 		char c[16] = "Noclip: ";
-		strcat(c, noclip ? "On" : "Off");
+		strcat_s(c, noclip ? "On" : "Off");
 		entry.SetName(c);
 	});
 	DelegateEntry patchhitbox(		"Patch Hitbox",		menuManager,	[](MenuEntry& entry) {
@@ -212,7 +212,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DelegateEntry fish(				"Fish timer: On",	menuManager,	[](MenuEntry& entry) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
-		strcat(c, unlimitedFish ? "Off" : "On");
+		strcat_s(c, unlimitedFish ? "Off" : "On");
 		entry.SetName(c);
 	});
 	DelegateEntry fuckedobjectss(	"Textures: Off",	menuManager,	[](MenuEntry& entry) {
@@ -225,7 +225,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			}
 		}
 		char c[16] = "Textures: ";
-		strcat(c, fuckedobjects ? "On" : "Off");
+		strcat_s(c, fuckedobjects ? "On" : "Off");
 		entry.SetName(c);
 	});
 	DelegateEntry rainbowmenuu(		"Rainbow: Off",		menuManager,	[](MenuEntry& entry) {
@@ -233,7 +233,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (!rainbowMenu)
 			*(rgba*)rgbaddress = oldrgb;
 		char c[16] = "Rainbow: ";
-		strcat(c, rainbowMenu ? "On" : "Off");
+		strcat_s(c, rainbowMenu ? "On" : "Off");
 		entry.SetName(c);
 	});
 	s2.AddMenuEntry(&fish);
