@@ -7,3 +7,4 @@ pch.cpp
 framework.h
 .swp*
 .*~
+x64/*
