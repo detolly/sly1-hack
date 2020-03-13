@@ -26,6 +26,8 @@
 // 0018FCF0: stores the opacity of stuff - this one will be fun
 // 00147ab0 - is called when you pick up a coin / maybe when entities are interacted with
 
+// 20269C98 - pointer to controlled entity
+
 #define ps2(a) a+0x20000000
 
 #pragma region declarations
@@ -43,9 +45,12 @@ DWORD rgbaddress;
 LPVOID Param;
 
 DWORD slyEntity;
+DWORD vehicleEntity;
 DWORD storedSlyCollision;
+DWORD storedVehicleCollision;
 Rotation* slyRotation;
-Vector3* storedLocation;
+Vector3* storedSlyLocation;
+Vector3* storedVehicleLocation;
 
 bool fuckedobjects = false;
 GameObject* objects = (GameObject*)0x20D8E794;
@@ -124,15 +129,20 @@ bool flymode = false;
 stdHook oAccessSlyPosition;
 void hkSlyPosition() {
 	r->s3.UW[0] = 0x1;
-	if (*(DWORD*)(ps2(r->s0.UW[0])+0x08) == 5)
+	int entityId = *(DWORD*)(ps2(r->s0.UW[0]) + 0x08);
+	if (entityId == 5)
 		slyEntity = (ps2(r->s0.UW[0]));
+	else if (entityId == 9)
+		vehicleEntity = (ps2(r->s0.UW[0]));
+
 	oAccessSlyPosition();
 }
 
 stdHook oSetVelocity;
 void hkSetVelocity() {
 	r->v0.UW[0] += 0x1858;
-	if (*(int*)(ps2(r->s0.UW[0] + 0x8)) == 5) {
+	int entityId = *(int*)(ps2(r->s0.UW[0] + 0x8));
+	if (entityId == 5 || entityId == 9) {
 		if (noclip || flymode) {
 			*(float*)(ps2(r->s0.UW[0] + 0x158)) = 20.f;
 			if (!showCustomMenu) {
@@ -199,8 +209,12 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (noclip) {
 			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
 			*(DWORD*)(slyEntity + 0x14) = 0;
+			storedVehicleCollision = *(DWORD*)(slyEntity + 0x14);
+			*(DWORD*)(vehicleEntity + 0x14) = 0;
 		}
 		else if (!(*(DWORD*)(slyEntity + 0x14))) {
+			if (!(*(DWORD*)(vehicleEntity + 0x14)))
+				*(DWORD*)(vehicleEntity + 0x14) = storedVehicleCollision;
 			*(DWORD*)(slyEntity + 0x14) = storedSlyCollision;
 		}
 		char c[16] = "Noclip: ";
@@ -270,24 +284,58 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DelegateEntry savelocation(		"Save Location",	menuManager,	[](MenuEntry& entry) {
 		if (slyEntity)
 		{
+			if (storedSlyLocation)
+				delete storedSlyLocation;
 			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
-			if (storedLocation)
-				delete storedLocation;
-			storedLocation = new Vector3();
-			storedLocation->x = slyPos->x;
-			storedLocation->y = slyPos->y;
-			storedLocation->z = slyPos->z;
+			storedSlyLocation = new Vector3();
+			storedSlyLocation->x = slyPos->x;
+			storedSlyLocation->y = slyPos->y;
+			storedSlyLocation->z = slyPos->z;
+			if (!storedVehicleLocation) {
+				storedVehicleLocation = new Vector3();
+				*storedVehicleLocation = *storedSlyLocation;
+			}
+		}
+		if (vehicleEntity) {
+			if (storedVehicleLocation)
+				delete storedVehicleLocation;
+			if (vehicleEntity) 
+			{
+				Vector3* vehiclePos = (Vector3*)(vehicleEntity + 0x100);
+				storedVehicleLocation = new Vector3();
+				storedVehicleLocation->x = vehiclePos->x;
+				storedVehicleLocation->y = vehiclePos->y;
+				storedVehicleLocation->z = vehiclePos->z;
+			}
 		}
 	});
 	DelegateEntry loadlocation(		"Load Location",	menuManager,	[](MenuEntry& entry) {
-		if (slyEntity && storedLocation)
+		if (slyEntity && storedSlyLocation)
 		{
 			for (int i = 0; i < 3; i++) {
 				Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
 				*(float*)(slyEntity + 0x150) = 0.f;
 				*(float*)(slyEntity + 0x154) = 0.f;
 				*(float*)(slyEntity + 0x158) = 0.f;
-				*slyPos = *storedLocation;
+				*slyPos = *storedSlyLocation;
+				if (!storedVehicleLocation && vehicleEntity)
+				{
+					Vector3* vehiclePos = (Vector3*)(vehicleEntity + 0x100);
+					*(float*)(vehicleEntity + 0x150) = 0.f;
+					*(float*)(vehicleEntity + 0x154) = 0.f;
+					*(float*)(vehicleEntity + 0x158) = 0.f;
+					*vehiclePos = *storedSlyLocation;
+				}
+			}
+		}
+		if (vehicleEntity && storedVehicleLocation)
+		{
+			for (int i = 0; i < 3; i++) {
+				Vector3* vehiclePos = (Vector3*)(vehicleEntity + 0x100);
+				*(float*)(vehicleEntity + 0x150) = 0.f;
+				*(float*)(vehicleEntity + 0x154) = 0.f;
+				*(float*)(vehicleEntity + 0x158) = 0.f;
+				*vehiclePos = *storedVehicleLocation;
 			}
 		}
 	});
@@ -364,7 +412,11 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (frames % 1000 == 0 && slyEntity)
 		{
 			Vector3* pos = (Vector3*)(slyEntity + 0x100);
-			printf("pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z);
+			printf("Sly Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z);
+			if (vehicleEntity) {
+				Vector3* pos = (Vector3*)(vehicleEntity + 0x100);
+				printf("Vehicle Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z);
+			}
 		}
 		if (GetAsyncKeyState(VK_DOWN)) {
 			if (!registeredDOWN) {
