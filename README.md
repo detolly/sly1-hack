@@ -29,7 +29,7 @@ then you wait on the ready screen
 Now that you are ready, here's how the menu works:
  
 **Page Down**: Opens/Closes the menu  
-    **Note: You have to open the normal menu once before you can use the mod menu.**  
+&nbsp;&nbsp;&nbsp;&nbsp;**Note: You have to open the normal menu once before you can use the mod menu.**  
 **Up/Down arrows**: navigate the menu / go up or down, respectively, in noclip (requires the menu to be closed)  
 **Left arrow**: go back in the menu  
 
