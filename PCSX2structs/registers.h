@@ -58,9 +58,7 @@ struct Regs {
 		s0, s1, s2, s3, s4, s5, s6, s7,
 		t8, t9, k0, k1, gp, sp, s8, ra;
 };
-
-Regs* r = (Regs*)0x01888630;
-
+/*
 float* _f00 = (float*)0x827E90;
 float* _f01 = (float*)_f00 + 0x4;
 float* _f02 = (float*)_f01 + 0x4;
@@ -93,3 +91,4 @@ float* _f28 = (float*)_f27 + 0x4;
 float* _f29 = (float*)_f28 + 0x4;
 float* _f30 = (float*)_f29 + 0x4;
 float* _f31 = (float*)_f30 + 0x4;
+*/

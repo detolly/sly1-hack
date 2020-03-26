@@ -1,8 +1,8 @@
 #pragma once
 #include <map>
+#include "../Utilities/Utility.h"
 
 using std::map;
-typedef void(__cdecl* stdHook)();
 
 struct HookMember {
 public:

@@ -2,37 +2,26 @@
 
 #include "Utilities/sigscan.h"
 #include "Utilities/memorydump.h"
+#include "Utilities/Utility.h"
 
 #include "PCSX2structs/registers.h"
 
-#include "GameStructs/vector3.h"
-#include "GameStructs/rotation.h"
-#include "GameStructs/Menu.h"
-#include "GameStructs/Strings.h"
-#include "GameStructs/rgb.h"
-#include "GameStructs/Object.h"
 #include "GameStructs/EntityList.h"
+#include "GameStructs/Menu.h"
+#include "GameStructs/Object.h"
+#include "GameStructs/rotation.h"
+#include "GameStructs/rgb.h"
+#include "GameStructs/Strings.h"
+#include "GameStructs/vector3.h"
 
 #include "MenuSystem/MenuManager.h"
 
+#include "Hooks/Hooks.h"
 #include "Hooks/HookManager.h"
 
 #include "psapi.h"
 
-
-// this function has to do with animations: 00124fc0
-
-// 001749A4: jumped to if ledgegrabbing
-// 0018FCF0: stores the opacity of stuff - this one will be fun
-// 00147ab0 - is called when you pick up a coin / maybe when entities are interacted with
-
-// 20269C98 - pointer to controlled entity
-
-#define ps2(a) a+0x20000000
-
 #pragma region declarations
-bool showCustomMenu = false;
-Menu* m = (Menu*)0x2026FF68;
 
 Strings* gameStrings;
 Strings originalStrings;
@@ -44,119 +33,19 @@ DWORD rgbaddress;
 
 LPVOID Param;
 
-DWORD slyEntity;
-DWORD vehicleEntity;
-DWORD storedSlyCollision;
-DWORD storedVehicleCollision;
-Rotation* slyRotation;
-Vector3* storedSlyLocation;
-Vector3* storedVehicleLocation;
-
 bool fuckedobjects = false;
 GameObject* objects = (GameObject*)0x20D8E794;
-#pragma endregion declarations
 
-#pragma region hooks
+#pragma endregion
 
-stdHook oPickUpCoin;
-void hookPickUpCoin() {
-	r->v0.UW[0] = 69;
-	oPickUpCoin();
-}
 
-bool charms;
-stdHook oCharmDamage;
-void charmDamageHook() {
-	if (charms) {
-		r->v0.UW[0] = 2;
-	}
-	else {
-		r->v0.UW[0] -= 1;
-	}
-	oCharmDamage();
-}
+// this function has to do with animations: 00124fc0
 
-bool godmode = false;
-stdHook oSlyHit;
-void hookedSlyHit() {
-	if (godmode) {
-		DWORD temp = r->s1.UD[0];
-		while (*(DWORD*)(ps2(temp)) != 0)
-			temp += 4;
-		printf("found a temp: 0x%x, original s1: 0x%x\r\n", temp, r->s1.UW[0]);
-		r->a0.UD[0] = temp;
-	}
-	else  r->a0.UD[0] = r->s1.UD[0];
-	oSlyHit();
-}
+// 001749A4: jumped to if ledgegrabbing
+// 0018FCF0: stores the opacity of stuff - this one will be fun
+// 00147ab0 - is called when you pick up a coin / maybe when entities are interacted with
 
-bool unlimitedFish = false;
-stdHook oFishTimer;
-void fishHook() {
-	if (!unlimitedFish) {
-		*_f01 = *_f01 + *_f00;
-	}
-	oFishTimer();
-}
-
-stdHook oSelectInMenu;
-void selectInMenu() {
-	r->v0.UW[0] -= (u32)0x62B0;
-	oSelectInMenu();
-}
-
-bool rainbowMenu = false;
-stdHook oRenderMenu;
-void renderMenuHook() {
-	r->v0.UW[0] = *(u32*)(ps2((DWORD)(r->s2.UW[0] + 0x250)));
-	if (showCustomMenu) {
-		m->x = 25;
-		m->y = 50;
-		m->menuScale = 0.7f;
-	}
-	oRenderMenu();
-}
-
-stdHook oChangeOpacity;
-void hookedChangeOpacity() {
-	//idk what this is or was
-	oChangeOpacity();
-}
-
-bool noclip = false;
-bool flymode = false;
-
-stdHook oAccessSlyPosition;
-void hkSlyPosition() {
-	r->s3.UW[0] = 0x1;
-	int entityId = *(DWORD*)(ps2(r->s0.UW[0]) + 0x08);
-	if (entityId == 5)
-		slyEntity = (ps2(r->s0.UW[0]));
-	else if (entityId == 9)
-		vehicleEntity = (ps2(r->s0.UW[0]));
-
-	oAccessSlyPosition();
-}
-
-stdHook oSetVelocity;
-void hkSetVelocity() {
-	r->v0.UW[0] += 0x1858;
-	int entityId = *(int*)(ps2(r->s0.UW[0] + 0x8));
-	if (entityId == 5 || entityId == 9) {
-		if (noclip || flymode) {
-			*(float*)(ps2(r->s0.UW[0] + 0x158)) = 20.f;
-			if (!showCustomMenu) {
-				if (GetAsyncKeyState(VK_UP))
-					*(float*)(ps2(r->s0.UW[0] + 0x158)) = 200.f;
-				else if (GetAsyncKeyState(VK_DOWN))
-					*(float*)(ps2(r->s0.UW[0]+ 0x158)) = -200.0f;
-			}
-		}
-	}
-	oSetVelocity();
-}
-#pragma endregion hooks
-
+// 20269C98 - pointer to controlled entity
 
 DWORD WINAPI MainThread(LPVOID param) {
 	AllocConsole();
@@ -178,10 +67,9 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DWORD pGameStrings = 0x0;
 	SignatureScanner::FindSignature(&pGameStrings , 0x20000000, 0x10000000, "Paused", "xxxxxx", 0);
 	gameStrings = (Strings*)pGameStrings;
+	memcpy(&originalStrings, gameStrings, sizeof(Strings));
 
 	Param = param;
-	memcpy(&originalStrings, gameStrings, sizeof(Strings));
-	MenuManager menuManager(":weed:", myStrings, gameStrings);
 	HMODULE b = GetModuleHandleA("pcsx2.exe");
 	MODULEINFO c; 
 	GetModuleInformation(GetCurrentProcess(), b, &c, sizeof(c)); 
@@ -190,9 +78,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 	printf("Found registers! (0x%x)\r\n", a);
 	r = (Regs*)a;
 
+	MenuManager menuManager(":weed:", myStrings, gameStrings);
 	MenuEntry placeholder("-", menuManager);
 	SubMenu s("General", menuManager, menuManager);
-	DelegateEntry godmodee(			"Godmode: Off",		menuManager,	[](MenuEntry& entry) {
+	DelegateEntry godmodee("Godmode: Off", menuManager, [](MenuEntry& entry) {
 		godmode = !godmode;
 		char c[16] = "Godmode: ";
 		strcat_s(c, godmode ? "On" : "Off");
@@ -204,7 +93,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, charms ? "On" : "Off");
 		entry.SetName(c);
 		});
-	DelegateEntry noclipp(			"Noclip: Off",		menuManager,	[](MenuEntry& entry) {
+	DelegateEntry noclipp("Noclip: Off", menuManager, [](MenuEntry& entry) {
 		noclip = !noclip;
 		if (noclip) {
 			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
@@ -221,13 +110,13 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, noclip ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry flymodee(			"Fly Mode: Off", menuManager, [](MenuEntry& entry) {
+	DelegateEntry flymodee("Fly Mode: Off", menuManager, [](MenuEntry& entry) {
 		flymode = !flymode;
 		char c[16] = "Fly Mode: ";
 		strcat_s(c, flymode ? "On" : "Off");
 		entry.SetName(c);
 		});
-	DelegateEntry patchhitbox(		"Patch Hitbox",		menuManager,	[](MenuEntry& entry) {
+	DelegateEntry patchhitbox("Patch Hitbox", menuManager, [](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			DWORD p = *(DWORD*)(slyEntity + 0x14);
@@ -247,13 +136,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s.AddMenuEntry(&placeholder);
 
 	SubMenu s2("Misc", menuManager, menuManager);
-	DelegateEntry fish(				"Fish timer: On",	menuManager,	[](MenuEntry& entry) {
+	/*DelegateEntry fish("Fish timer: On", menuManager, [](MenuEntry& entry) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
 		strcat_s(c, unlimitedFish ? "Off" : "On");
 		entry.SetName(c);
 	});
-	DelegateEntry fuckedobjectss(	"Textures: Off",	menuManager,	[](MenuEntry& entry) {
+	*/
+	DelegateEntry fuckedobjectss("Textures: Off", menuManager, [](MenuEntry& entry) {
 		fuckedobjects = !fuckedobjects;
 		if (fuckedobjects)
 		{
@@ -266,7 +156,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, fuckedobjects ? "On" : "Off");
 		entry.SetName(c);
 	});
-	DelegateEntry rainbowmenuu(		"Rainbow: Off",		menuManager,	[](MenuEntry& entry) {
+	DelegateEntry rainbowmenuu("Rainbow: Off", menuManager, [](MenuEntry& entry) {
 		rainbowMenu = !rainbowMenu;
 		if (!rainbowMenu)
 			*(rgba*)rgbaddress = oldrgb;
@@ -274,14 +164,15 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, rainbowMenu ? "On" : "Off");
 		entry.SetName(c);
 	});
-	s2.AddMenuEntry(&fish);
+	//s2.AddMenuEntry(&fish);
 	s2.AddMenuEntry(&fuckedobjectss);
 	s2.AddMenuEntry(&rainbowmenuu);
 	s2.AddMenuEntry(&placeholder);
 	s2.AddMenuEntry(&placeholder);
+	s2.AddMenuEntry(&placeholder);
 
 	SubMenu s3("Location", menuManager, menuManager);
-	DelegateEntry savelocation(		"Save Location",	menuManager,	[](MenuEntry& entry) {
+	DelegateEntry savelocation("Save Location", menuManager, [](MenuEntry& entry) {
 		if (slyEntity)
 		{
 			if (storedSlyLocation)
@@ -309,7 +200,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			}
 		}
 	});
-	DelegateEntry loadlocation(		"Load Location",	menuManager,	[](MenuEntry& entry) {
+	DelegateEntry loadlocation("Load Location", menuManager, [](MenuEntry& entry) {
 		if (slyEntity && storedSlyLocation)
 		{
 			for (int i = 0; i < 3; i++) {
@@ -346,7 +237,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s3.AddMenuEntry(&placeholder);
 
 	SubMenu s4("Entities", menuManager, menuManager);
-	DelegateEntry launchEntities(	"Launch Up",		menuManager,	[](MenuEntry& entry) {
+	DelegateEntry launchEntities("Launch Up", menuManager, [](MenuEntry& entry) {
 		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0; //TODO: HARDCODED
 		int i = 0;
 		do {
@@ -393,7 +284,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	int slyHitHandle		= hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit,		&oSlyHit); 
 	int slyPositionHandle	= hookManager.AddHook((void*)0x2012551C, &hkSlyPosition,	&oAccessSlyPosition);
 	int setVelocityHandle	= hookManager.AddHook((void*)0x20125510, &hkSetVelocity,	&oSetVelocity);
-	int fishHandle			= hookManager.AddHook((void*)0x201ABB58, &fishHook,			&oFishTimer);
+	//int fishHandle			= hookManager.AddHook((void*)0x201ABB58, &fishHook,			&oFishTimer);
 
 	hookManager.HookAll(param);
 
@@ -412,10 +303,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (frames % 1000 == 0 && slyEntity)
 		{
 			Vector3* pos = (Vector3*)(slyEntity + 0x100);
-			printf("Sly Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z);
+			//printf("Sly Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z); TODO: REMOVE COMMENT
 			if (vehicleEntity) {
 				Vector3* pos = (Vector3*)(vehicleEntity + 0x100);
-				printf("Vehicle Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z);
+				//printf("Vehicle Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z); //TODO: REMOVE COMMENT
 			}
 		}
 		if (GetAsyncKeyState(VK_DOWN)) {
