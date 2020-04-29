@@ -1,9 +1,12 @@
 #pragma once
+
+#include "../Utilities/declarations.h"
+#include <windows.h>
 #include <map>
-#include "../Utilities/Utility.h"
 
 using std::map;
 
+typedef void(__cdecl* stdHook)();
 struct HookMember {
 public:
 	void* baseAddress;

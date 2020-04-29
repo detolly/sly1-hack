@@ -1,4 +1,6 @@
+#pragma once
 
+#include "../Utilities/declarations.h"
 #include "../Utilities/sigscan.h"
 
 #include "HookManager.h"
@@ -12,8 +14,6 @@ int HookManager::AddHook(void* baseAddr, void* functionAddr, stdHook* retAddr) {
 	hooks.insert(std::make_pair(id, member));
 	return id;
 }
-
-HookManager* hmanager;
 
 bool find(int i, std::vector<int>* c) {
 	for (int k = 0; k < c->size(); k++)

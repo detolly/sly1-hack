@@ -1,5 +1,4 @@
 #pragma once
-#include "../pch.h"
 
 struct Level {
 	//120 bytes total

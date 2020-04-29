@@ -1,11 +1,9 @@
 #pragma once
+
+#include "declarations.h"
 #include "../PCSX2structs/registers.h"
 
-typedef void(__cdecl* stdHook)();
-
 #define ps2(a) a+0x20000000
-
-static Regs* r;
 
 inline static void printStack(const int start = -160, const int stop = 160) {
 	const auto stackpointer = r->sp.UW[0];

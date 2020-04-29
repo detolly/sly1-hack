@@ -1,5 +1,6 @@
 ﻿// dllmain.cpp : Defines the entry point for the DLL application.
 
+#include "Utilities/declarations.h"
 #include "Utilities/sigscan.h"
 #include "Utilities/memorydump.h"
 #include "Utilities/Utility.h"
@@ -20,23 +21,6 @@
 #include "Hooks/HookManager.h"
 
 #include "psapi.h"
-
-#pragma region declarations
-
-Strings* gameStrings;
-Strings originalStrings;
-Strings myStrings;
-
-hsv h;
-rgba oldrgb;
-DWORD rgbaddress;
-
-LPVOID Param;
-
-bool fuckedobjects = false;
-GameObject* objects = (GameObject*)0x20D8E794;
-
-#pragma endregion
 
 
 // this function has to do with animations: 00124fc0
@@ -136,7 +120,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s.AddMenuEntry(&placeholder);
 
 	SubMenu s2("Misc", menuManager, menuManager);
-	/*DelegateEntry fish("Fish timer: On", menuManager, [](MenuEntry& entry) {
+	/*
+	DelegateEntry fish("Fish timer: On", menuManager, [](MenuEntry& entry) {
 		unlimitedFish = !unlimitedFish;
 		char c[16] = "Fish timer: ";
 		strcat_s(c, unlimitedFish ? "Off" : "On");
@@ -268,9 +253,6 @@ DWORD WINAPI MainThread(LPVOID param) {
 	//  and not the translated x86 msvc that you see in cheat engine f. ex.
 	
 	/*
-	oFishTimer = (stdHook)hookManager.Get(fishHandle)->Hook();
-	
-
 	int opacityHookHandle = hookManager.AddHook(HookMember((void*)0x2018FCF0, &hookedChangeOpacity));
 	oChangeOpacity = (stdHook)hookManager.Get(opacityHookHandle)->Hook();
 	*/
@@ -309,58 +291,48 @@ DWORD WINAPI MainThread(LPVOID param) {
 				//printf("Vehicle Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z); //TODO: REMOVE COMMENT
 			}
 		}
-		if (GetAsyncKeyState(VK_DOWN)) {
-			if (!registeredDOWN) {
-				registeredDOWN = true;
-				if (showCustomMenu) {
-					m->highlightedIndex++;
-					if (m->highlightedIndex > 4) {
-						menuManager.setIndex(true);
-						m->highlightedIndex = 4;
-					}
+		if (GetAsyncKeyState(VK_DOWN) && !registeredDOWN) {
+			registeredDOWN = true;
+			if (showCustomMenu) {
+				m->highlightedIndex++;
+				if (m->highlightedIndex > 4) {
+					menuManager.setIndex(true);
+					m->highlightedIndex = 4;
 				}
 			}
 		} else registeredDOWN = false;
-		if (GetAsyncKeyState(VK_UP)) {
-			if (!registeredUP) {
-				registeredUP = true;
-				if (showCustomMenu) {
-					m->highlightedIndex--;
-					if (m->highlightedIndex < 0) {
-						menuManager.setIndex(false);
-						m->highlightedIndex = 0;
-					}
+		if (GetAsyncKeyState(VK_UP) && !registeredUP) {
+			registeredUP = true;
+			if (showCustomMenu) {
+				m->highlightedIndex--;
+				if (m->highlightedIndex < 0) {
+					menuManager.setIndex(false);
+					m->highlightedIndex = 0;
 				}
 			}
 		} else registeredUP = false;
-		if (GetAsyncKeyState(VK_NEXT)) {
-			if (!registeredPGDN) {
-				registeredPGDN = true;
-				if (!m->isMenuOpen || showCustomMenu)
-				{
-					menuManager.Update();
-					showCustomMenu = !showCustomMenu;
-					m->menuStatus = showCustomMenu ? 1 : 3;
-					m->isMenuOpen = showCustomMenu ? 1 : 0;
-					m->menuFade = showCustomMenu ? 0.f : 2.f;
-					*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
-					*gameStrings = showCustomMenu ? myStrings : originalStrings;
-				}
+		if (GetAsyncKeyState(VK_NEXT) && !registeredPGDN) {
+			registeredPGDN = true;
+			if (!m->isMenuOpen || showCustomMenu)
+			{
+				menuManager.Update();
+				showCustomMenu = !showCustomMenu;
+				m->menuStatus = showCustomMenu ? 1 : 3;
+				m->isMenuOpen = showCustomMenu ? 1 : 0;
+				m->menuFade = showCustomMenu ? 0.f : 2.f;
+				*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
+				*gameStrings = showCustomMenu ? myStrings : originalStrings;
 			}
 		} else registeredPGDN = false;
-		if (GetAsyncKeyState(VK_LEFT)) {
-			if (!registeredLEFT) {
-				if (showCustomMenu)
-					menuManager.Back();
-				registeredLEFT = true;
-			}
+		if (GetAsyncKeyState(VK_LEFT) && !registeredLEFT) {
+			if (showCustomMenu)
+				menuManager.Back();
+			registeredLEFT = true;
 		} else registeredLEFT = false;
-		if (GetAsyncKeyState(VK_RETURN)) {
-			if (!registeredENTER) {
-				registeredENTER = true;
-				if (showCustomMenu)
-					menuManager.executeAt(m->highlightedIndex);
-			}
+		if (GetAsyncKeyState(VK_RETURN) && !registeredENTER) {
+			if (showCustomMenu)
+				menuManager.executeAt(m->highlightedIndex);
+			registeredENTER = true;
 		} else registeredENTER = false;
 		/*if (GetAsyncKeyState(VK_END)) {
 			if (!registeredEND) {
@@ -371,7 +343,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 			}
 		} else registeredEND = false;
 		*/
-		Sleep(1);
+		Sleep(50);
 	}
 
 	FreeConsole();

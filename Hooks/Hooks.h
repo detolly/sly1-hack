@@ -1,26 +1,21 @@
 #pragma once
 #include "../Utilities/Utility.h"
+#include "../Utilities/declarations.h"
 
-Menu* m = (Menu*)0x2026FF68;
-DWORD slyEntity;
-DWORD vehicleEntity;
-DWORD storedSlyCollision;
-DWORD storedVehicleCollision;
-Vector3* storedSlyLocation;
-Vector3* storedVehicleLocation;
-
-bool showCustomMenu = false;
-unsigned long long counter = 0u;
+static bool rainbowMenu{ false };
+static bool noclip{ false };
+static bool flymode{ false };
+static bool charms{ false };
+static bool godmode{ false };
 
 stdHook oPickUpCoin;
-void hookPickUpCoin() {
-	r->v0.UW[0] = 69;
+static void hookPickUpCoin() {
+	r->v0.UW[0] = 69; //set register to 69, then it gets stored
 	oPickUpCoin();
 }
 
-bool charms;
 stdHook oCharmDamage;
-void charmDamageHook() {
+static void charmDamageHook() {
 	if (charms) {
 		r->v0.UW[0] = 2;
 	}
@@ -30,9 +25,8 @@ void charmDamageHook() {
 	oCharmDamage();
 }
 
-bool godmode = false;
 stdHook oSlyHit;
-void hookedSlyHit() {
+static void hookedSlyHit() {
 	if (godmode) {
 		DWORD temp = r->s1.UD[0];
 		while (*(DWORD*)(ps2(temp)) != 0)
@@ -56,12 +50,11 @@ void fishHook() {
 */
 
 stdHook oSelectInMenu;
-void selectInMenu() {
+static void selectInMenu() {
 	r->v0.UW[0] -= (u32)0x62B0;
 	oSelectInMenu();
 }
 
-bool rainbowMenu = false;
 stdHook oRenderMenu;
 static void renderMenuHook() {
 	*(DWORD*)(ps2(r->sp.UW[0] + 64)) = 0x00000000;
@@ -82,8 +75,6 @@ static void hookedChangeOpacity() {
 	oChangeOpacity();
 }
 
-bool noclip = false;
-bool flymode = false;
 
 stdHook oAccessSlyPosition;
 static void hkSlyPosition() {

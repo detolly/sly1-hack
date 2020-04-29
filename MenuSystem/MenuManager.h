@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../GameStructs/Strings.h"
+#include "../Utilities/declarations.h"
 #include "MenuEntry.h"
 
 class MenuManager : public SubMenu {

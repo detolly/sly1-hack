@@ -30,7 +30,6 @@ public:
 
 	static DWORD PatternScan(const char* pattern, const char* mask, size_t offset)
 	{
-		printf("got here 1\r\n");
 		SYSTEM_INFO sysInfo;
 
 		GetSystemInfo(&sysInfo);
@@ -42,7 +41,6 @@ public:
 
 		while (currentChunk < end)
 		{
-			printf("got here 2\r\n");
 			MEMORY_BASIC_INFORMATION mbi;
 			if (!VirtualQuery((char*)currentChunk, &mbi, sizeof(mbi)))
 			{
@@ -50,11 +48,9 @@ public:
 			}
 			if (mbi.State == MEM_COMMIT && mbi.Protect != PAGE_NOACCESS)
 			{
-				printf("got here 3\r\n");
 				DWORD oldprotect;
 				if (VirtualProtect(mbi.BaseAddress, mbi.RegionSize, PAGE_EXECUTE_READWRITE, &oldprotect))
 				{
-					printf("got here 3 0x%p 0x%p\r\n", mbi.BaseAddress, mbi.RegionSize);
 					if (SignatureScanner::FindSignature(&match, (DWORD)mbi.BaseAddress, mbi.RegionSize, pattern, mask, offset)) {
 						break;
 					}
@@ -63,7 +59,6 @@ public:
 			}
 			currentChunk = currentChunk + mbi.RegionSize;
 		}
-		printf("got here 5\r\n");
 		return match;
 	}
 };

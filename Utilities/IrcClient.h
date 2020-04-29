@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../Utilities/declarations.h"
+
 //making the small menus 00134DAC 00170E04
 
 class IrcClient {
