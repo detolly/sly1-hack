@@ -15,9 +15,9 @@ int HookManager::AddHook(void* baseAddr, void* functionAddr, stdHook* retAddr) {
 	return id;
 }
 
-bool find(int i, std::vector<int>* c) {
-	for (int k = 0; k < c->size(); k++)
-		if (c->at(k) == i)
+bool find(int i, std::vector<int>& c) {
+	for (int k = 0; k < c.size(); k++)
+		if (c[k] == i)
 			return true;
 	return false;
 }
@@ -34,7 +34,7 @@ DWORD WINAPI HookThread(LPVOID param) {
 	std::vector<int> completed;
 	while (true) {
 		for (int i = 0; i < hmanager->hooks.size(); i++) {
-			if (find(i, &completed))
+			if (find(i, completed))
 				continue;
 			if (!SignatureScanner::FindSignature(&hookLocation, 0x30000000, 0x01000000, hmanager->Get(i)->hookString, hookMask, 0)) {
 				continue;
@@ -48,7 +48,7 @@ DWORD WINAPI HookThread(LPVOID param) {
 			memset((void*)hookLocation, 0x90, length);
 			*(BYTE*)hookLocation = 0xE9;
 			*(DWORD*)(hookLocation + 1) = ((DWORD)hmanager->Get(i)->functionPointer - hookLocation - 5);
-			VirtualProtect((void*)hookLocation, length, old, &old);
+			//VirtualProtect((void*)hookLocation, length, old, &old);
 			delete hmanager->Get(i);
 		}
 		if (completed.size() == hmanager->hooks.size())
@@ -78,7 +78,7 @@ void HookMember::Hook() {
 	char bytesToReplace[]	=	{ (char)handle, (char)0x13, (char)0x9B, (char)0x8D };
 	VirtualProtect(baseAddress, 4, PAGE_EXECUTE_READWRITE, &old);
 	memcpy(baseAddress, bytesToReplace, 4);
-	VirtualProtect(baseAddress, 4, old, &old);
+	//VirtualProtect(baseAddress, 4, old, &old);
 }
 
 HookMember::HookMember(void* baseAddress, void* functionPointer, stdHook* ret, char handle) :

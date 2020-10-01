@@ -7,25 +7,51 @@ static bool noclip{ false };
 static bool flymode{ false };
 static bool charms{ false };
 static bool godmode{ false };
+static stdHook oPickUpCoin;
+static stdHook oCharmDamage;
+static stdHook oSlyHit;
+static stdHook oSelectInMenu;
+static stdHook oRenderMenu;
+static stdHook oChangeOpacity;
+static stdHook oDisplayText;
+static stdHook oAccessSlyPosition;
+static stdHook oSetVelocity;
+static stdHook oUpdateDisplay;
+static void hookPickUpCoin();
+static void charmDamageHook();
+static void hookedSlyHit();
+static void selectInMenu();
+static void renderMenuHook();
+static void hookedChangeOpacity();
+static void hookedDisplayText();
+static void hookedUpdateDisplay();
+static void hkSlyPosition();
+static void hkSetVelocity();
 
-stdHook oPickUpCoin;
+static int coinSetAmount = 69;
 static void hookPickUpCoin() {
-	r->v0.UW[0] = 69; //set register to 69, then it gets stored
-	oPickUpCoin();
+	if (coinSetAmount == 0)
+		coinSetAmount = 99;
+	r->v0.UW[0] = coinSetAmount--; //set register to 69, then it gets stored
+	//callNative(&oUpdateDisplay);
+	__asm {
+		jmp oPickUpCoin
+	};
 }
 
-stdHook oCharmDamage;
 static void charmDamageHook() {
+	r->a0.UW[0] = 0x26EC70;
 	if (charms) {
 		r->v0.UW[0] = 2;
 	}
 	else {
 		r->v0.UW[0] -= 1;
 	}
-	oCharmDamage();
+	__asm {
+		jmp oCharmDamage
+	};
 }
 
-stdHook oSlyHit;
 static void hookedSlyHit() {
 	if (godmode) {
 		DWORD temp = r->s1.UD[0];
@@ -35,7 +61,9 @@ static void hookedSlyHit() {
 		r->a0.UD[0] = temp;
 	}
 	else  r->a0.UD[0] = r->s1.UD[0];
-	oSlyHit();
+	__asm {
+		jmp oSlyHit
+	};
 }
 
 /*
@@ -49,55 +77,79 @@ void fishHook() {
 }
 */
 
-stdHook oSelectInMenu;
 static void selectInMenu() {
 	r->v0.UW[0] -= (u32)0x62B0;
-	oSelectInMenu();
+	__asm {
+		jmp oSelectInMenu
+	};
 }
 
-stdHook oRenderMenu;
 static void renderMenuHook() {
 	*(DWORD*)(ps2(r->sp.UW[0] + 64)) = 0x00000000;
-	if (counter++ % 256 == 0)
-		printStack();
+	//if (counter++ % 256 == 0)
+	//	printStack();
 	r->v0.UW[0] = *(u32*)(ps2((DWORD)(r->s2.UW[0] + 0x250)));
 	if (showCustomMenu) {
 		m->x = 25;
 		m->y = 50;
 		m->menuScale = 0.7f;
 	}
-	oRenderMenu();
+	__asm {
+		jmp oRenderMenu
+	};
 }
 
-stdHook oChangeOpacity;
 static void hookedChangeOpacity() {
 	//idk what this is or was
-	oChangeOpacity();
+	__asm {
+		jmp oChangeOpacity
+	};
+}
+
+static void hookedDisplayText() {
+	r->s1 = r->a0;
+	if (r->a0.UW[0] == 0x26EC70) {
+		printf("Writing: %s\n", ps2(r->a1.UW[0]));
+		static const char* buttons[] = {
+			"asd", "greetings", "yeetings", "&2T&. &2S&."
+		};
+		static int ind{ 0 };
+		const size_t size = 128;
+		char buffer[size]{0};
+		sprintf_s<size>(buffer, "Selected %d: %s", (ind = ((ind + 1) % (sizeof(buttons) / sizeof(const char*)))), buttons[ind]);
+		memcpy((char*)ps2(0x2606F0), buffer, 128u);
+		r->a1.UW[0] = 0x2606F0;
+	}
+	else {
+		printf("Found unhandled Text Display: 0x%08x\n", ps2(r->a0.UW[0]));
+	}
+	__asm {
+		jmp oDisplayText
+	};
 }
 
 
-stdHook oAccessSlyPosition;
 static void hkSlyPosition() {
 	r->s3.UW[0] = 0x1;
-	const int entityId = *(DWORD*)(ps2(r->s0.UW[0]) + 0x08);
-	if (counter++ % 256 == 0)
-		printStack();
+	const int entityId = *(DWORD*)(ps2(r->s0.UW[0]) + 0x8);
+	//if (counter++ % 256 == 0)
+	//	printStack();
 	if (entityId == 5) {
 		slyEntity = (ps2(r->s0.UW[0]));
 	}
 	else if (entityId == 9)
 		vehicleEntity = (ps2(r->s0.UW[0]));
-
-	oAccessSlyPosition();
+	__asm {
+		jmp oAccessSlyPosition
+	};
 }
 
-stdHook oSetVelocity;
 static void hkSetVelocity() {
 	r->v0.UW[0] += 0x1858;
 	int entityId = *(int*)(ps2(r->s0.UW[0] + 0x8));
 	if (entityId == 5 || entityId == 9) {
 		if (noclip || flymode) {
-			*(float*)(ps2(r->s0.UW[0] + 0x158)) = 20.f;
+			*(float*)(ps2(r->s0.UW[0] + 0x158)) = 18.f;
 			if (!showCustomMenu) {
 				if (GetAsyncKeyState(VK_UP))
 					*(float*)(ps2(r->s0.UW[0] + 0x158)) = 200.f;
@@ -106,5 +158,15 @@ static void hkSetVelocity() {
 			}
 		}
 	}
-	oSetVelocity();
+	__asm {
+		jmp oSetVelocity
+	};
+}
+
+static void hookedUpdateDisplay() {
+	r->sp.UW[0] -= 0x10;
+	printf("Updating display for object 0x%08x\n", r->a0.UW[0]);
+	__asm {
+		jmp oUpdateDisplay
+	};
 }

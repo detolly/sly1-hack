@@ -221,6 +221,23 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s3.AddMenuEntry(&placeholder);
 	s3.AddMenuEntry(&placeholder);
 
+	SubMenu s5 = SubMenu("Level Warp", menuManager, menuManager);
+
+	const uint32_t level_start_thing = 0x20247b74-2*0x2C;
+	for (uint32_t current = level_start_thing; current <= 0x202482ac; current += 0x2C) {
+		uint32_t a = *(uint32_t*)(current + 0x24);
+		const char* b = (const char*)ps2(a);
+		DelegateEntry* ent = new DelegateEntry(b, menuManager, [](MenuEntry& entry) {
+			call_native_through_cheat(0x001F0428, entry.garbage_value1());
+			*gameStrings = originalStrings;
+			showCustomMenu = false;
+			m->menuStatus = showCustomMenu ? 1 : 3;
+			m->isMenuOpen = false;
+		});
+		ent->set_garbage_value1(current);
+		s5.AddMenuEntry(ent);
+	}
+
 	SubMenu s4("Entities", menuManager, menuManager);
 	DelegateEntry launchEntities("Launch Up", menuManager, [](MenuEntry& entry) {
 		LinkedEntity* entity = (LinkedEntity*)0x208AC1A0; //TODO: HARDCODED
@@ -244,13 +261,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 	menuManager.AddMenuEntry(&s);
 	menuManager.AddMenuEntry(&s2);
 	menuManager.AddMenuEntry(&s3);
+	menuManager.AddMenuEntry(&s5);
 	menuManager.AddMenuEntry(&s4);
 
 	menuManager.AddMenuEntry(&placeholder);
 	menuManager.AddMenuEntry(&placeholder);
 
 	//  addresses are not hard coded so to speak, they're just references to the actual MIPS game code,
-	//  and not the translated x86 msvc that you see in cheat engine f. ex.
+	//  and not the translated x86 that you see in cheat engine f. ex.
 	
 	/*
 	int opacityHookHandle = hookManager.AddHook(HookMember((void*)0x2018FCF0, &hookedChangeOpacity));
@@ -260,12 +278,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 	//int pressedMenuHandle	= hookManager.AddHook((void*)0x20195964, &selectInMenu,		&oSelectInMenu);
 	HookManager hookManager;
 
-	int renderMenuHandle	= hookManager.AddHook((void*)0x20194FDC, &renderMenuHook,	&oRenderMenu);
-	int charmHookHandle		= hookManager.AddHook((void*)0x20192C8C, &charmDamageHook,	&oCharmDamage);
-	int coinHookHandle		= hookManager.AddHook((void*)0x201481C4, &hookPickUpCoin,	&oPickUpCoin);
-	int slyHitHandle		= hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit,		&oSlyHit); 
-	int slyPositionHandle	= hookManager.AddHook((void*)0x2012551C, &hkSlyPosition,	&oAccessSlyPosition);
-	int setVelocityHandle	= hookManager.AddHook((void*)0x20125510, &hkSetVelocity,	&oSetVelocity);
+	//int renderMenuHandle	= hookManager.AddHook((void*)0x20194FDC, &renderMenuHook,		&oRenderMenu);
+	int charmHookHandle		= hookManager.AddHook((void*)0x20192C8C, &charmDamageHook,		&oCharmDamage);
+	//int coinHookHandle		= hookManager.AddHook((void*)0x201481C4, &hookPickUpCoin,		&oPickUpCoin);
+	//int slyHitHandle		= hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit,			&oSlyHit); 
+	//int slyPositionHandle	= hookManager.AddHook((void*)0x2012551C, &hkSlyPosition,		&oAccessSlyPosition);
+	//int setVelocityHandle	= hookManager.AddHook((void*)0x20125510, &hkSetVelocity,		&oSetVelocity);
+	//int displayTextHandle	= hookManager.AddHook((void*)0x201ac644, &hookedDisplayText,	&oDisplayText);
+	//int updateDisplayHandle = hookManager.AddHook((void*)0x201aa8f0, &hookedUpdateDisplay,	&oUpdateDisplay);
 	//int fishHandle			= hookManager.AddHook((void*)0x201ABB58, &fishHook,			&oFishTimer);
 
 	hookManager.HookAll(param);
@@ -320,7 +340,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				m->menuStatus = showCustomMenu ? 1 : 3;
 				m->isMenuOpen = showCustomMenu ? 1 : 0;
 				m->menuFade = showCustomMenu ? 0.f : 2.f;
-				*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
+				//*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
 				*gameStrings = showCustomMenu ? myStrings : originalStrings;
 			}
 		} else registeredPGDN = false;

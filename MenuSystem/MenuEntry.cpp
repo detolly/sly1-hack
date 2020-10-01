@@ -6,7 +6,7 @@
 #define max(a,b) a >= b ? a : b
 #define min(a,b) a <= b ? a : b
 
-MenuEntry::MenuEntry(const char* _name, MenuManager& m) : name(), manager(m) {
+MenuEntry::MenuEntry(const char* _name, MenuManager& m) : name(), m_manager(m) {
 	SetName(_name);
 }
 
@@ -37,7 +37,7 @@ void SubMenu::AddMenuEntry(MenuEntry* entry)
 
 void SubMenu::execute()
 {
-	manager.SetCurrentlyDisplayingMenu(*this);
+	manager().SetCurrentlyDisplayingMenu(*this);
 }
 
 void DelegateEntry::execute()

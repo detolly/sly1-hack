@@ -37,6 +37,41 @@ typedef union _s128_t
 	s64 hi;
 } s128;
 
+union CP0regs {
+	struct {
+		u32	Index, Random, EntryLo0, EntryLo1,
+			Context, PageMask, Wired, Reserved0,
+			BadVAddr, Count, EntryHi, Compare;
+		union {
+			struct {
+				u32 IE : 1;		// Bit 0: Interrupt Enable flag.
+				u32 EXL : 1;		// Bit 1: Exception Level, set on any exception not covered by ERL.
+				u32 ERL : 1;		// Bit 2: Error level, set on Resetm NMI, perf/debug exceptions.
+				u32 KSU : 2;		// Bits 3-4: Kernel [clear] / Supervisor [set] mode
+				u32 unused0 : 3;
+				u32 IM : 8;		// Bits 10-15: Interrupt mask (bits 12,13,14 are unused)
+				u32 EIE : 1;		// Bit 16: IE bit enabler.  When cleared, ints are disabled regardless of IE status.
+				u32 _EDI : 1;		// Bit 17: Interrupt Enable (set enables ints in all modes, clear enables ints in kernel mode only)
+				u32 CH : 1;		// Bit 18: Status of most recent cache instruction (set for hit, clear for miss)
+				u32 unused1 : 3;
+				u32 BEV : 1;		// Bit 22: if set, use bootstrap for TLB/general exceptions
+				u32 DEV : 1;		// Bit 23: if set, use bootstrap for perf/debug exceptions
+				u32 unused2 : 2;
+				u32 FR : 1;		// (?)
+				u32 unused3 : 1;
+				u32 CU : 4;		// Bits 28-31: Co-processor Usable flag
+			} b;
+			u32 val;
+		} Status;
+		u32   Cause, EPC, PRid,
+			Config, LLAddr, WatchLO, WatchHI,
+			XContext, Reserved1, Reserved2, Debug,
+			DEPC, PerfCnt, ErrCtl, CacheErr,
+			TagLo, TagHi, ErrorEPC, DESAVE;
+	} n;
+	u32 r[32];
+};
+
 
 union GPR_reg {
 	u128	UQ;
@@ -50,13 +85,30 @@ union GPR_reg {
 	u8		UC[16];
 	s8		SC[16];
 };
-
-struct Regs {
-	GPR_reg 
+/*__pragma(pack(push, 1)) struct Regs __pragma(pack(pop)) {
+	GPR_reg
 		r0, at, v0, v1, a0, a1, a2, a3,
 		t0, t1, t2, t3, t4, t5, t6, t7,
 		s0, s1, s2, s3, s4, s5, s6, s7,
 		t8, t9, k0, k1, gp, sp, s8, ra;
+	GPR_reg HI, LO;
+	CP0regs CP0;
+	u32 sa;		
+	u32 IsDelaySlot;
+	u32 pc;
+};
+*/
+struct Regs {
+	GPR_reg
+		r0, at, v0, v1, a0, a1, a2, a3,
+		t0, t1, t2, t3, t4, t5, t6, t7,
+		s0, s1, s2, s3, s4, s5, s6, s7,
+		t8, t9, k0, k1, gp, sp, s8, ra;
+	GPR_reg HI, LO;
+	CP0regs CP0;
+	u32 sa;
+	u32 IsDelaySlot;
+	u32 pc;
 };
 /*
 float* _f00 = (float*)0x827E90;
