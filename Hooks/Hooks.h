@@ -1,6 +1,7 @@
 #pragma once
 #include "../Utilities/Utility.h"
 #include "../Utilities/declarations.h"
+#include "../PackedData.h"
 
 static bool rainbowMenu{ false };
 static bool noclip{ false };
@@ -17,6 +18,7 @@ static stdHook oDisplayText;
 static stdHook oAccessSlyPosition;
 static stdHook oSetVelocity;
 static stdHook oUpdateDisplay;
+static stdHook oCompress;
 static void hookPickUpCoin();
 static void charmDamageHook();
 static void hookedSlyHit();
@@ -63,6 +65,17 @@ static void hookedSlyHit() {
 	else  r->a0.UD[0] = r->s1.UD[0];
 	__asm {
 		jmp oSlyHit
+	};
+}
+
+
+static void hookedCompression() {
+	uint32_t ps2_ptr = r->a0.UW[0];
+	PackedData* data = (PackedData*)ps2(ps2_ptr);
+	printf("Calling Decompression logic on: %08x\nSize: %d\ncompression_key_value: %08x\nSize: %08x\nSize_of_fast_memory: %08x\nptr_data_origin: %08x\ndata_dst_ptr: %08x\n",
+		ps2_ptr, data->size, data->compression_key_value, data->size, data->size_of_70002000_segment, data->ptr_data_origin, data->data_dst_ptr);
+	__asm {
+		jmp oCompress
 	};
 }
 
@@ -134,10 +147,7 @@ static void hkSlyPosition() {
 	const int entityId = *(DWORD*)(ps2(r->s0.UW[0]) + 0x8);
 	//if (counter++ % 256 == 0)
 	//	printStack();
-	if (entityId == 5) {
-		slyEntity = (ps2(r->s0.UW[0]));
-	}
-	else if (entityId == 9)
+	if (entityId == 9)
 		vehicleEntity = (ps2(r->s0.UW[0]));
 	__asm {
 		jmp oAccessSlyPosition

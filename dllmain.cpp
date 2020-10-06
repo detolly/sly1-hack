@@ -31,6 +31,50 @@
 
 // 20269C98 - pointer to controlled entity
 
+// 0x260294
+constexpr int injection_data[] = {
+	0x27BDFFEC, // addiu sp, -0x14
+	0x3C040026, // lui t0, 0x26
+	0x3484EC70, // ori t0, t0, 0xec70
+	//0x14880018, // bne a0, t0, 0x18
+	0xFFBF0010, // sd ra, sp(0x10)
+
+	0x3C040026, // lui a0, 0x26
+	0x3484EC70, // ori a0, a0, 0xec70
+	0xAFA50014,	// sw a1, 0x14(sp)
+	0x3C050026, // lui a1, 0x26
+	0x34A50204,	// ori a1, a1, 0x0204
+	0x3C08001a, // lui t0, 0x1a
+	0x3508c638, // ori t0, t0, 0xc638
+	0x0100F809, // jal t0
+	0x00000000, // nop
+	0x8FA50014,	// lw a1, 0x14(sp)
+
+	0x3C040026, // lui a0, 0x26
+	0x3484EC70, // ori a0, a0, 0xec70
+	0x3C050026, // lui at, 0x4040
+	0x44816000, // mtcl at, f12
+	0x0c06aa2e, // jal gui_set_popup_timeout
+	0x00000000, // nop
+	
+	0x3C040026, // lui a0, 0x26
+	0x3484EC70, // ori a0, a0, 0xec70
+	0x3C08001a, // lui t0, 0x1a
+	0x3508AB60, // ori t0, t0, 0xab60
+	0x0100F809, // jal t0
+	0x00000000, // nop
+
+	0x3C040026, // lui a0, 0x26
+	0x3484EC70, // ori a0, a0, 0xec70
+	0x3C08001a, // lui t0, 0x1a
+	0x3508A8F0, // ori t0, t0, 0xa8f0
+	0x0100F809, // jal t0
+	0x00000000, // nop
+	0xDFBF0010, // ld ra, 0x4(sp)
+	0x03E00008, // jr ra
+	0x27BD0014  // addiu sp, 0x14
+};
+
 DWORD WINAPI MainThread(LPVOID param) {
 	AllocConsole();
 	_iobuf* fp;
@@ -48,6 +92,11 @@ DWORD WINAPI MainThread(LPVOID param) {
 	h.v = 1.f;
 	oldrgb = *(rgba*)rgbaddress;
 
+	//*(int*)(0x2018d4f8) = 0x08260294;
+	for (int i = 0; i < sizeof(injection_data)/4; i++) {
+		*(int*)(ps2(0x260294 + i * 4)) = injection_data[i];
+	}
+
 	DWORD pGameStrings = 0x0;
 	SignatureScanner::FindSignature(&pGameStrings , 0x20000000, 0x10000000, "Paused", "xxxxxx", 0);
 	gameStrings = (Strings*)pGameStrings;
@@ -61,6 +110,8 @@ DWORD WINAPI MainThread(LPVOID param) {
 	SignatureScanner::FindSignature(&a, (DWORD)c.lpBaseOfDll, c.SizeOfImage, "\x00\x80\xFF\xFF\x00\x80\x07\x00\x00\xC0\x07\x00\x00\x00\x00\x00", "xxxxxxxxxxxxxxxx", -1072);
 	printf("Found registers! (0x%x)\r\n", a);
 	r = (Regs*)a;
+
+
 
 	MenuManager menuManager(":weed:", myStrings, gameStrings);
 	MenuEntry placeholder("-", menuManager);
@@ -80,15 +131,15 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DelegateEntry noclipp("Noclip: Off", menuManager, [](MenuEntry& entry) {
 		noclip = !noclip;
 		if (noclip) {
-			storedSlyCollision = *(DWORD*)(slyEntity + 0x14);
-			*(DWORD*)(slyEntity + 0x14) = 0;
-			storedVehicleCollision = *(DWORD*)(slyEntity + 0x14);
+			storedSlyCollision = *(DWORD*)(slyEntity() + 0x14);
+			*(DWORD*)(slyEntity() + 0x14) = 0;
+			storedVehicleCollision = *(DWORD*)(slyEntity() + 0x14);
 			*(DWORD*)(vehicleEntity + 0x14) = 0;
 		}
-		else if (!(*(DWORD*)(slyEntity + 0x14))) {
+		else if (!(*(DWORD*)(slyEntity() + 0x14))) {
 			if (!(*(DWORD*)(vehicleEntity + 0x14)))
 				*(DWORD*)(vehicleEntity + 0x14) = storedVehicleCollision;
-			*(DWORD*)(slyEntity + 0x14) = storedSlyCollision;
+			*(DWORD*)(slyEntity() + 0x14) = storedSlyCollision;
 		}
 		char c[16] = "Noclip: ";
 		strcat_s(c, noclip ? "On" : "Off");
@@ -103,7 +154,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	DelegateEntry patchhitbox("Patch Hitbox", menuManager, [](MenuEntry& entry) {
 		if (slyEntity)
 		{
-			DWORD p = *(DWORD*)(slyEntity + 0x14);
+			DWORD p = *(DWORD*)(slyEntity() + 0x14);
 			DWORD j = ps2(p);
 			printf("0x%x", j);
 			*(int*)(j + 0x34) = 12;
@@ -149,10 +200,16 @@ DWORD WINAPI MainThread(LPVOID param) {
 		strcat_s(c, rainbowMenu ? "On" : "Off");
 		entry.SetName(c);
 	});
+	DelegateEntry show_thing("Show GUI Thing", menuManager, [](MenuEntry& entry) {
+		printf("trying to call...\n");
+		const char* __asd = "Greetings!";
+		memcpy((void*)0x20260204, __asd, strlen(__asd));
+		call_native_through_cheat(0x260294, 0x26ec70);
+	});
 	//s2.AddMenuEntry(&fish);
 	s2.AddMenuEntry(&fuckedobjectss);
 	s2.AddMenuEntry(&rainbowmenuu);
-	s2.AddMenuEntry(&placeholder);
+	s2.AddMenuEntry(&show_thing);
 	s2.AddMenuEntry(&placeholder);
 	s2.AddMenuEntry(&placeholder);
 
@@ -162,7 +219,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 		{
 			if (storedSlyLocation)
 				delete storedSlyLocation;
-			Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
+			Vector3* slyPos = (Vector3*)(slyEntity() + 0x100);
 			storedSlyLocation = new Vector3();
 			storedSlyLocation->x = slyPos->x;
 			storedSlyLocation->y = slyPos->y;
@@ -189,10 +246,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 		if (slyEntity && storedSlyLocation)
 		{
 			for (int i = 0; i < 3; i++) {
-				Vector3* slyPos = (Vector3*)(slyEntity + 0x100);
-				*(float*)(slyEntity + 0x150) = 0.f;
-				*(float*)(slyEntity + 0x154) = 0.f;
-				*(float*)(slyEntity + 0x158) = 0.f;
+				Vector3* slyPos = (Vector3*)(slyEntity() + 0x100);
+				*(float*)(slyEntity() + 0x150) = 0.f;
+				*(float*)(slyEntity() + 0x154) = 0.f;
+				*(float*)(slyEntity() + 0x158) = 0.f;
 				*slyPos = *storedSlyLocation;
 				if (!storedVehicleLocation && vehicleEntity)
 				{
@@ -222,6 +279,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 	s3.AddMenuEntry(&placeholder);
 
 	SubMenu s5 = SubMenu("Level Warp", menuManager, menuManager);
+	std::vector<DelegateEntry*> garbage;
 
 	const uint32_t level_start_thing = 0x20247b74-2*0x2C;
 	for (uint32_t current = level_start_thing; current <= 0x202482ac; current += 0x2C) {
@@ -229,11 +287,12 @@ DWORD WINAPI MainThread(LPVOID param) {
 		const char* b = (const char*)ps2(a);
 		DelegateEntry* ent = new DelegateEntry(b, menuManager, [](MenuEntry& entry) {
 			call_native_through_cheat(0x001F0428, entry.garbage_value1());
-			*gameStrings = originalStrings;
 			showCustomMenu = false;
 			m->menuStatus = showCustomMenu ? 1 : 3;
 			m->isMenuOpen = false;
+			*gameStrings = originalStrings;
 		});
+		garbage.push_back(ent);
 		ent->set_garbage_value1(current);
 		s5.AddMenuEntry(ent);
 	}
@@ -279,14 +338,14 @@ DWORD WINAPI MainThread(LPVOID param) {
 	HookManager hookManager;
 
 	//int renderMenuHandle	= hookManager.AddHook((void*)0x20194FDC, &renderMenuHook,		&oRenderMenu);
-	int charmHookHandle		= hookManager.AddHook((void*)0x20192C8C, &charmDamageHook,		&oCharmDamage);
+	//int charmHookHandle		= hookManager.AddHook((void*)0x20192C8C, &charmDamageHook,		&oCharmDamage);
 	//int coinHookHandle		= hookManager.AddHook((void*)0x201481C4, &hookPickUpCoin,		&oPickUpCoin);
 	//int slyHitHandle		= hookManager.AddHook((void*)0x2013BF30, &hookedSlyHit,			&oSlyHit); 
 	//int slyPositionHandle	= hookManager.AddHook((void*)0x2012551C, &hkSlyPosition,		&oAccessSlyPosition);
 	//int setVelocityHandle	= hookManager.AddHook((void*)0x20125510, &hkSetVelocity,		&oSetVelocity);
 	//int displayTextHandle	= hookManager.AddHook((void*)0x201ac644, &hookedDisplayText,	&oDisplayText);
 	//int updateDisplayHandle = hookManager.AddHook((void*)0x201aa8f0, &hookedUpdateDisplay,	&oUpdateDisplay);
-	//int fishHandle			= hookManager.AddHook((void*)0x201ABB58, &fishHook,			&oFishTimer);
+	int compressionHook = hookManager.AddHook((void*)0x201378ac, &hookedCompression, &oCompress);
 
 	hookManager.HookAll(param);
 
@@ -302,9 +361,10 @@ DWORD WINAPI MainThread(LPVOID param) {
 	while (true) {
 		//if (GetAsyncKeyState(VK_ESCAPE)) break;
 		frames++;
+
 		if (frames % 1000 == 0 && slyEntity)
 		{
-			Vector3* pos = (Vector3*)(slyEntity + 0x100);
+			Vector3* pos = (Vector3*)(slyEntity() + 0x100);
 			//printf("Sly Pos: %.2f %.2f %.2f\r\n", pos->x, pos->y, pos->z); TODO: REMOVE COMMENT
 			if (vehicleEntity) {
 				Vector3* pos = (Vector3*)(vehicleEntity + 0x100);
@@ -339,7 +399,7 @@ DWORD WINAPI MainThread(LPVOID param) {
 				showCustomMenu = !showCustomMenu;
 				m->menuStatus = showCustomMenu ? 1 : 3;
 				m->isMenuOpen = showCustomMenu ? 1 : 0;
-				m->menuFade = showCustomMenu ? 0.f : 2.f;
+				m->menuFade = showCustomMenu ? -1.f : 0.f;
 				//*(rgba*)rgbaddress = showCustomMenu ? *(rgba*)rgbaddress : oldrgb;
 				*gameStrings = showCustomMenu ? myStrings : originalStrings;
 			}
@@ -354,18 +414,24 @@ DWORD WINAPI MainThread(LPVOID param) {
 				menuManager.executeAt(m->highlightedIndex);
 			registeredENTER = true;
 		} else registeredENTER = false;
-		/*if (GetAsyncKeyState(VK_END)) {
+		if (GetAsyncKeyState(VK_END) && !registeredEND) {
 			if (!registeredEND) {
 				registeredEND = true;
-				printf("dumping memory\r\n");
-				MemoryDump::Dump("C:\\Users\\Thomas\\Desktop\\dump.bin", 0x20000000, 0x0FFFFFFF);
-				printf("memory dumped\r\n");
+				goto asd;
+				//printf("dumping memory\r\n");
+				//MemoryDump::Dump("C:\\Users\\Thomas\\Desktop\\dump.bin", 0x20000000, 0x0FFFFFFF);
+				//printf("memory dumped\r\n");
 			}
 		} else registeredEND = false;
-		*/
+		
 		Sleep(50);
 	}
+asd:
+	for (size_t i = 0; i < garbage.size(); i++) {
+		delete garbage.at(i);
+	}
 
+	printf("Exiting! You can now close the window.\n");
 	FreeConsole();
 	FreeLibraryAndExitThread((HMODULE)Param, 0);
 }

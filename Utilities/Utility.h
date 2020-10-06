@@ -25,6 +25,7 @@ inline static void callNative(void* hook) {
 inline static void call_native_through_cheat(uint32_t addr, uint32_t arg)
 {
 	uint32_t tmp = *(uint32_t*)(ps2(0x00262a88));
+	uint32_t tmp_arg = *(uint32_t*)(ps2(0x00262a8c));
 	*(uint32_t*)(ps2(0x00262a88)) = addr;
 	*(uint32_t*)(ps2(0x00262a8C)) = arg;
 	*(uint32_t*)(ps2(0x00262a90)) = 15;
@@ -32,6 +33,12 @@ inline static void call_native_through_cheat(uint32_t addr, uint32_t arg)
 		Sleep(500);
 	}
 	*(uint32_t*)(ps2(0x00262a88)) = tmp;
+	*(uint32_t*)(ps2(0x00262a8C)) = tmp_arg;
+}
+
+inline static void print_on_screen(const char *str) {
+	memcpy((void*)0x20260204, str, strlen(str)+1);
+	call_native_through_cheat(0x260294, 0x26ec70);
 }
 
 inline static void printStack(const int start = -160, const int stop = 160) {

@@ -1,12 +1,12 @@
 #pragma once
 
 struct Menu {
-	int a;
-	int randomConstant;
-	char buffer[520];
-	int menuHandle;
-	char buffer2[16];
-	float x;
+	int a;					// 0
+	char* text;				// 4
+	char buffer[520];		// 8
+	int menuHandle;			// 528
+	char buffer2[16];		// 532
+	float x;				// 548
 	float y;
 	char buffer3[8];
 	float menuWidth;

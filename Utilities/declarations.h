@@ -28,7 +28,7 @@ static bool fuckedobjects = false;
 static GameObject* objects = (GameObject*)0x20D8E794;
 
 static Menu* m = (Menu*)0x2026FF68;
-static DWORD slyEntity;
+static DWORD slyEntity() { return *(DWORD*)0x20262E10; };
 static DWORD vehicleEntity;
 static DWORD storedSlyCollision;
 static DWORD storedVehicleCollision;
